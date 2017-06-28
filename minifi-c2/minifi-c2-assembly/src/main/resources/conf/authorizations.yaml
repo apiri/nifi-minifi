@@ -37,3 +37,6 @@ Paths:
     # Default authorization lets anonymous pull any config.  Remove below to change that.
     - Authorization: ROLE_ANONYMOUS
       Action: allow
+
+  /c2/heartbeat:
+    Default Action: allow

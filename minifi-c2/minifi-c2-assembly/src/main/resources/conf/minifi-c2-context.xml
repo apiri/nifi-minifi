@@ -88,4 +88,16 @@
             </bean>
         </constructor-arg>
     </bean>
+    <bean id="heartbeatService" class="org.apache.nifi.minifi.c2.service.heartbeat.HeartbeatService" scope="singleton">
+        <constructor-arg>
+            <list>
+                <!-- Update to include Heartbeat Consumer impls -->
+            </list>
+        </constructor-arg>
+        <constructor-arg>
+            <bean class="org.apache.nifi.minifi.c2.security.authorization.GrantedAuthorityAuthorizer">
+                <constructor-arg value="classpath:authorizations.yaml"/>
+            </bean>
+        </constructor-arg>
+    </bean>
 </beans>
