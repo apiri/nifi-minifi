@@ -1,0 +1,66 @@
+applicationName: Apache NiFi Device Registry
+
+server:
+  applicationConnectors:
+  - type: http
+    port: 8888
+  adminConnectors:
+  - type: http
+    port: 8889
+  registerDefaultExceptionMappers: false
+
+database:
+  # the name of your JDBC driver
+  driverClass: com.mysql.jdbc.Driver
+
+  # the username
+  user: root
+
+  # the dassword
+  password: nifidevregistry
+
+  # the JDBC URL
+  url: jdbc:mysql://localhost:3306/GARCON
+
+  # any properties specific to your JDBC driver:
+  properties:
+    charSet: UTF-8
+
+  # the maximum amount of time to wait on an empty pool before throwing an exception
+  maxWaitForConnection: 1s
+
+  # the SQL query to run when validating a connection's liveness
+  validationQuery: "/* MyService Health Check */ SELECT 1"
+
+  # the minimum number of connections to keep open
+  minSize: 8
+
+  # the maximum number of connections to keep open
+  maxSize: 32
+
+  # whether or not idle connections should be validated
+  checkConnectionWhileIdle: false
+
+  # the amount of time to sleep between runs of the idle connection validation, abandoned cleaner and idle pool resizing
+  evictionInterval: 10s
+
+  # the minimum amount of time an connection must sit idle in the pool before it is eligible for eviction
+  minIdleTime: 1 minute
+
+logging:
+  level: INFO
+  loggers:
+    "org.apache.nifi.device.registry.resource.c2":
+      level: DEBUG
+      appenders:
+        - type: file
+          currentLogFilename: /var/log/deviceregistry.log
+          threshold: ALL
+          archive: true
+          archivedLogFilenamePattern: /var/log/deviceregistry-%d.log
+          archivedFileCount: 5
+          timeZone: UTC
+          logFormat: # TODO
+        - type: console
+          threshold: ALL
+          target: stderr
