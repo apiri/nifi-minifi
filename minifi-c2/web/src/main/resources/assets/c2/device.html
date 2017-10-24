@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>Garcon</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="assets/css/bootstrap.min.css">
+    <script src="assets/js/jquery.min.js"></script>
+    <script src="assets/js/datatables.min.js"></script>
+    <script src="assets/js/bootstrap.min.js"></script>
+    <style>
+    /* Set height of the grid so .sidenav can be 100% (adjust as needed) */
+    .row.content {height: 550px}
+
+    /* Set gray background color and 100% height */
+    .sidenav {
+      background-color: #f1f1f1;
+      height: 100%;
+    }
+
+    /* On small screens, set height to 'auto' for the grid */
+    @media screen and (max-width: 767px) {
+      .row.content {height: auto;}
+    }
+  </style>
+</head>
+<body>
+
+
+<div class="container-fluid">
+    <div class="row">
+
+        <div id="dashboard" class="content col-sm-12">
+
+            <!-- Devices HUD -->
+            <div class="row">
+                <div class="col-sm-12">
+                    <div class="well">
+                        <h4>MiNiFi C++ HUD</h4>
+                        <p id="minifiCppDevicesWell"></p>
+                        <div class="row">
+                            <div class="col-sm-3">
+                                <div class="well">
+                                    MiNiFi Devices:
+                                    <p id="minifiDevicesHUD"></p>
+                                </div>
+                            </div>
+                            <div class="col-sm-3">
+                                <div class="well">
+                                    Operations Input form:
+                                    <form id="operationForm">
+                                        Operation:
+                                        <select id="operationsSel"></select><br>
+                                        <select id="contentoptions"></select><br>
+                                        <button type="button" id="createOperation">Create Operation</button>
+                                    </form>
+                                </div>
+                            </div>
+
+                            <div class="col-sm-3">
+                                <div class="well">
+                                    Device Information
+                                    <table class="table">
+                                        <thead>
+                                        <tr>
+                                            <th>Class</th>
+                                            <th>Memory Avail</th>
+                                        </tr>
+                                        </thead>
+                                        <tbody id="deviceInfo">
+
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+
+                            <div class="col-sm-3">
+                                <div class="well">
+                                    Connection Metrics
+                                    <table class="table">
+                                        <thead>
+                                        <tr>
+                                            <th>Name</th>
+                                            <th>Bytes Max</th>
+                                            <th>Bytes</th>
+                                            <th>Queued max</th>
+                                            <th>Queued</th>
+                                        </tr>
+                                        </thead>
+                                        <tbody id="connectMetrics">
+
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+
+
+            <!-- Operations -->
+            <div id="operations" class="row">
+                <!--
+                <div class="col-sm-12">
+                    <div class="well">
+                        Operations Input form:
+                        <form id="operationForm">
+                            Operation:
+                            <select id="operationsSel"></select><br>
+                            <select id="contentoptions"></select><br>
+                            <button type="button" id="createOperation">Create Operation</button>
+                        </form>
+                    </div>
+                </div>
+                -->
+                <div class="col-sm-12">
+                    <div class="well">
+                        Operation History:
+                        <table id="leoperationtable" class="table">
+                            <thead>
+                            <tr>
+                                <th>Operation ID</th>
+                                <th>Operation</th>
+                                <th>Name</th>
+                                <th>Acked</th>
+                                <th>Acked Timestamp</th>
+                            </tr>
+                            </thead>
+                            <tbody id="operationHistoryBody">
+
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+</div>
+
+</body>
+
+<script src="assets/js/main.js"></script>
+<script src="assets/js/device.js"></script>
+<script src="assets/js/bootstrap-support.js"></script>
+
+</html>
