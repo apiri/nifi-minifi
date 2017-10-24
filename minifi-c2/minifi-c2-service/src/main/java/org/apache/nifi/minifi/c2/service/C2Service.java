@@ -39,6 +39,8 @@ import org.springframework.security.core.context.SecurityContextHolder;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.GET;
+import javax.ws.rs.POST;
+import javax.ws.rs.PUT;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
 import javax.ws.rs.WebApplicationException;
@@ -78,6 +80,7 @@ public class C2Service {
     public C2Service(List<ConfigurationProvider> configurationProviders, Authorizer authorizer) {
         this(configurationProviders, authorizer, 1000, 300_000);
     }
+
     public C2Service(List<ConfigurationProvider> configurationProviders, Authorizer authorizer, long maximumCacheSize, long cacheTtlMillis) {
         this.authorizer = authorizer;
         this.objectMapper = new ObjectMapper();
@@ -145,6 +148,16 @@ public class C2Service {
             }
         }
         return new ConfigurationProviderInfo(mediaTypeList, contentTypes, null);
+    }
+
+    @POST
+    @GET
+    @PUT
+    @Path("/heartbeat")
+    @Produces(MediaType.APPLICATION_JSON)
+    public Response consumeHeartbeat(@Context HttpServletRequest request, @Context UriInfo uriInfo) {
+
+        return null;
     }
 
     @GET
@@ -247,7 +260,7 @@ public class C2Service {
         } catch (ConfigurationProviderException e) {
             logger.warn("Unable to get configuration.", e);
             return Response.status(500).build();
-        } catch (ExecutionException|UncheckedExecutionException e) {
+        } catch (ExecutionException | UncheckedExecutionException e) {
             Throwable cause = e.getCause();
             if (cause instanceof WebApplicationException) {
                 throw (WebApplicationException) cause;
