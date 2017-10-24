@@ -1,4 +1,4 @@
-package device;
+package org.apache.nifi.device.registry.api.device;
 
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -20,13 +20,13 @@ package device;
  */
 
 
-public class NiFiDevice
-    extends Device {
+public class NiFiDevice extends Device {
 
     private long id;
     private String uri;
 
-    public NiFiDevice() {}
+    public NiFiDevice() {
+    }
 
     public long getId() {
         return id;

@@ -1,4 +1,4 @@
-package device;
+package org.apache.nifi.device.registry.api.device;
 
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
