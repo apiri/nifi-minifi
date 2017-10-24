@@ -1,13 +1,10 @@
 package org.apache.nifi.device.registry.service.monitor.impl;
 
-import java.util.Iterator;
-import java.util.List;
-
 import org.apache.nifi.api.client.NiFiClient;
 import org.apache.nifi.api.client.impl.NiFiAPIClient;
 import org.apache.nifi.api.client.service.ProcessGroups;
 import org.apache.nifi.api.client.service.impl.ProcessGroupsImplementation;
-import org.apache.nifi.device.registry.api.cluster.NiFiCluster;
+import org.apache.nifi.device.registry.api.device.cluster.NiFiCluster;
 import org.apache.nifi.device.registry.api.monitor.MetricThreshold;
 import org.apache.nifi.device.registry.dao.cluster.NiFiClusterDAO;
 import org.apache.nifi.device.registry.dao.device.NiFiDeviceDAO;
@@ -17,6 +14,9 @@ import org.apache.nifi.device.registry.service.container.docker.impl.DockerEngin
 import org.apache.nifi.device.registry.service.monitor.MonitoringService;
 import org.apache.nifi.web.api.entity.ConnectionEntity;
 import org.apache.nifi.web.api.entity.ConnectionsEntity;
+
+import java.util.Iterator;
+import java.util.List;
 
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more

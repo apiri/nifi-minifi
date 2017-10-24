@@ -1,11 +1,11 @@
 package org.apache.nifi.device.registry.dao.cluster.impl;
 
-import java.sql.ResultSet;
-import java.sql.SQLException;
-
-import org.apache.nifi.device.registry.api.cluster.NiFiCluster;
+import org.apache.nifi.device.registry.api.device.cluster.NiFiCluster;
 import org.skife.jdbi.v2.StatementContext;
 import org.skife.jdbi.v2.tweak.ResultSetMapper;
+
+import java.sql.ResultSet;
+import java.sql.SQLException;
 
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more

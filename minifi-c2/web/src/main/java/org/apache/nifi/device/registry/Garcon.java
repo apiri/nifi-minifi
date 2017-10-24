@@ -18,10 +18,12 @@
 
 package org.apache.nifi.device.registry;
 
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
-
+import io.dropwizard.Application;
+import io.dropwizard.assets.AssetsBundle;
+import io.dropwizard.jdbi.DBIFactory;
+import io.dropwizard.setup.Bootstrap;
+import io.dropwizard.setup.Environment;
+import io.dropwizard.websockets.WebsocketBundle;
 import org.apache.nifi.device.registry.dao.cluster.NiFiClusterDAO;
 import org.apache.nifi.device.registry.dao.device.DeviceDAO;
 import org.apache.nifi.device.registry.dao.device.NiFiDeviceDAO;
@@ -29,8 +31,14 @@ import org.apache.nifi.device.registry.dao.monitor.MetricThresholdDAO;
 import org.apache.nifi.device.registry.resource.DeviceRegistryDashboardResource;
 import org.apache.nifi.device.registry.resource.NiFiDeviceWebSocketNotifier;
 import org.apache.nifi.device.registry.resource.c2.C2Resource;
-import org.apache.nifi.device.registry.resource.c2.core.config.C2DeviceFlowFileConfig;
-import org.apache.nifi.device.registry.resource.c2.dao.*;
+import org.apache.nifi.device.registry.resource.c2.dao.C2ComponentDAO;
+import org.apache.nifi.device.registry.resource.c2.dao.C2DeviceDAO;
+import org.apache.nifi.device.registry.resource.c2.dao.C2DeviceFlowFileConfigDAO;
+import org.apache.nifi.device.registry.resource.c2.dao.C2DeviceFlowFileConfigMappingDAO;
+import org.apache.nifi.device.registry.resource.c2.dao.C2HeartbeatDAO;
+import org.apache.nifi.device.registry.resource.c2.dao.C2OperationDAO;
+import org.apache.nifi.device.registry.resource.c2.dao.C2ProcessMetricsDAO;
+import org.apache.nifi.device.registry.resource.c2.dao.C2QueueMetricsDAO;
 import org.apache.nifi.device.registry.resource.device.DeviceResource;
 import org.apache.nifi.device.registry.resource.operations.ConnectionsResource;
 import org.apache.nifi.device.registry.resource.operations.ProcessorsResource;
@@ -39,12 +47,9 @@ import org.apache.nifi.device.registry.service.device.impl.DeviceServiceImpl;
 import org.apache.nifi.device.registry.service.monitor.impl.ScheduledMonitoringServiceImpl;
 import org.skife.jdbi.v2.DBI;
 
-import io.dropwizard.Application;
-import io.dropwizard.assets.AssetsBundle;
-import io.dropwizard.jdbi.DBIFactory;
-import io.dropwizard.setup.Bootstrap;
-import io.dropwizard.setup.Environment;
-import io.dropwizard.websockets.WebsocketBundle;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 public class Garcon
         extends Application<GarconConfiguration> {
@@ -82,9 +87,6 @@ public class Garcon
         final C2DeviceFlowFileConfigDAO c2DeviceFlowFileConfigDAO = jdbi.onDemand(C2DeviceFlowFileConfigDAO.class);
         final C2DeviceFlowFileConfigMappingDAO c2DeviceFlowFileConfigMappingDAO = jdbi.onDemand(C2DeviceFlowFileConfigMappingDAO.class);
 
-//        //Add managed instances.
-//        environment.lifecycle().manage(new Site2SiteManagedProxy(configuration));
-
         //Register your Web Resources like below.
         DeviceService deviceService = new DeviceServiceImpl(configuration, deviceDAO);
         environment.jersey().register(new DeviceResource(configuration, deviceService));
@@ -103,12 +105,6 @@ public class Garcon
         ScheduledExecutorService exec = Executors.newSingleThreadScheduledExecutor();
         exec.scheduleAtFixedRate(new ScheduledMonitoringServiceImpl(clusterDAO, nodeDAO, metricThresholdDAO), 0, 5, TimeUnit.SECONDS);
 
-//        DockerEngineService dockerEngineService = new DockerEngineServiceRESTImpl();
-//        String containerId = dockerEngineService.startNiFiContainer("apache/nifi:1.2.0", 1);
-//        System.out.println("Docker container starting with container ID: " + containerId);
-//        System.out.println("Stopping docker container now ....");
-//        dockerEngineService.stopNiFiContainer(containerId);
-//        System.out.println("Docker container stopped");
     }
 
     public static void main(String[] args) throws Exception {

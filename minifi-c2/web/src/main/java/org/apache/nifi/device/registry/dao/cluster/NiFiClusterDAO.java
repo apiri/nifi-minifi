@@ -1,12 +1,13 @@
 package org.apache.nifi.device.registry.dao.cluster;
 
-import java.util.List;
 
-import org.apache.nifi.device.registry.api.cluster.NiFiCluster;
+import org.apache.nifi.device.registry.api.device.cluster.NiFiCluster;
 import org.apache.nifi.device.registry.dao.cluster.impl.NiFiClusterMapper;
 import org.skife.jdbi.v2.sqlobject.Bind;
 import org.skife.jdbi.v2.sqlobject.SqlQuery;
 import org.skife.jdbi.v2.sqlobject.customizers.RegisterMapper;
+
+import java.util.List;
 
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more

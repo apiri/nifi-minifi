@@ -34,6 +34,8 @@ limitations under the License.
         <module>minifi-c2-assembly</module>
         <module>minifi-c2-docker</module>
         <module>minifi-c2-integration-tests</module>
+        <module>nifi-api-client</module>
+        <module>web</module>
     </modules>
 
     <dependencyManagement>
