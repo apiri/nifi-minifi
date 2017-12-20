@@ -30,5 +30,6 @@ limitations under the License.
         <module>minifi-c2-provider-cache</module>
         <module>minifi-c2-provider-delegating</module>
         <module>minifi-c2-provider-nifi-rest</module>
+        <module>minifi-c2-heartbeat-consumer</module>
     </modules>
 </project>
