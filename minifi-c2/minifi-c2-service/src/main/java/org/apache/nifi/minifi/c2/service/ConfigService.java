@@ -33,6 +33,7 @@ import org.apache.nifi.minifi.c2.api.security.authorization.AuthorizationExcepti
 import org.apache.nifi.minifi.c2.api.security.authorization.Authorizer;
 import org.apache.nifi.minifi.c2.api.util.Pair;
 import org.apache.nifi.minifi.c2.util.HttpRequestUtil;
+import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -78,6 +79,7 @@ public class ConfigService {
     public ConfigService(List<ConfigurationProvider> configurationProviders, Authorizer authorizer) {
         this(configurationProviders, authorizer, 1000, 300_000);
     }
+
     public ConfigService(List<ConfigurationProvider> configurationProviders, Authorizer authorizer, long maximumCacheSize, long cacheTtlMillis) {
         this.authorizer = authorizer;
         this.objectMapper = new ObjectMapper();
@@ -145,6 +147,15 @@ public class ConfigService {
             }
         }
         return new ConfigurationProviderInfo(mediaTypeList, contentTypes, null);
+    }
+
+    @GET
+    @Path("/status")
+    @Produces(MediaType.APPLICATION_JSON)
+    public Response getStatus(@Context HttpServletRequest request, @Context UriInfo uriInfo) {
+        JSONObject response = new JSONObject();
+        response.put("message", "You're doing a-okay at the C2 endpoint");
+        return Response.ok().type(MediaType.APPLICATION_JSON_TYPE).entity(response.toString()).build();
     }
 
     @GET
@@ -240,7 +251,7 @@ public class ConfigService {
         } catch (ConfigurationProviderException e) {
             logger.warn("Unable to get configuration.", e);
             return Response.status(500).build();
-        } catch (ExecutionException|UncheckedExecutionException e) {
+        } catch (ExecutionException | UncheckedExecutionException e) {
             Throwable cause = e.getCause();
             if (cause instanceof WebApplicationException) {
                 throw (WebApplicationException) cause;

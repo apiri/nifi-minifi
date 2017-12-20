@@ -27,6 +27,7 @@ limitations under the License.
 
     <modules>
         <module>minifi-c2-api</module>
+        <module>minifi-c2-model</module>
         <module>minifi-c2-cache</module>
         <module>minifi-c2-provider</module>
         <module>minifi-c2-service</module>

@@ -25,14 +25,22 @@ import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
 import com.google.common.util.concurrent.UncheckedExecutionException;
 import com.wordnik.swagger.annotations.Api;
+import org.apache.nifi.device.registry.resource.c2.core.C2Payload;
+import org.apache.nifi.device.registry.resource.c2.core.C2Response;
+import org.apache.nifi.device.registry.resource.c2.core.config.C2DeviceFlowFileConfig;
+import org.apache.nifi.device.registry.resource.c2.core.ops.C2Operation;
+import org.apache.nifi.device.registry.resource.c2.dto.CreateOperationRequest;
+import org.apache.nifi.device.registry.resource.c2.dto.SupportedOperations;
 import org.apache.nifi.minifi.c2.api.Configuration;
 import org.apache.nifi.minifi.c2.api.ConfigurationProvider;
 import org.apache.nifi.minifi.c2.api.ConfigurationProviderException;
+import org.apache.nifi.minifi.c2.api.HeartbeatConsumer;
 import org.apache.nifi.minifi.c2.api.InvalidParameterException;
 import org.apache.nifi.minifi.c2.api.security.authorization.AuthorizationException;
 import org.apache.nifi.minifi.c2.api.security.authorization.Authorizer;
 import org.apache.nifi.minifi.c2.api.util.Pair;
 import org.apache.nifi.minifi.c2.util.HttpRequestUtil;
+import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -40,8 +48,8 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.GET;
 import javax.ws.rs.POST;
-import javax.ws.rs.PUT;
 import javax.ws.rs.Path;
+import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.Context;
@@ -65,9 +73,9 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
-@Path("/c2")
+@Path("/api/v1/c2")
 @Api(
-        value = "/c2",
+        value = "/api/v1/c2",
         description = "Provides command and control (C2) for MiNiFi instances"
 )
 public class C2Service {
@@ -76,12 +84,13 @@ public class C2Service {
     private final ObjectMapper objectMapper;
     private final Supplier<ConfigurationProviderInfo> configurationProviderInfo;
     private final LoadingCache<ConfigurationProviderKey, ConfigurationProviderValue> configurationCache;
+    private final HeartbeatConsumer c2Service;
 
-    public C2Service(List<ConfigurationProvider> configurationProviders, Authorizer authorizer) {
+    public C2Service(List<ConfigurationProvider> configurationProviders, Authorizer authorizer/*, HeartbeatConsumer c2service*/) {
         this(configurationProviders, authorizer, 1000, 300_000);
     }
 
-    public C2Service(List<ConfigurationProvider> configurationProviders, Authorizer authorizer, long maximumCacheSize, long cacheTtlMillis) {
+    public C2Service(List<ConfigurationProvider> configurationProviders, Authorizer authorizer, long maximumCacheSize, long cacheTtlMillis/*, HeartbeatConsumer c2service*/) {
         this.authorizer = authorizer;
         this.objectMapper = new ObjectMapper();
         if (configurationProviders == null || configurationProviders.size() == 0) {
@@ -102,6 +111,7 @@ public class C2Service {
                         return initConfigurationProviderValue(key);
                     }
                 });
+        this.c2Service = null;
     }
 
     public ConfigurationProviderValue initConfigurationProviderValue(ConfigurationProviderKey key) {
@@ -151,18 +161,156 @@ public class C2Service {
     }
 
     @POST
-    @Path("/heartbeat")
-    @Produces(MediaType.APPLICATION_JSON)
-    public Response consumeHeartbeat(@Context HttpServletRequest request, @Context UriInfo uriInfo) {
+    public Response consumeHeartbeat(C2Payload payload) {
+        try {
+            logger.error("MiNiFi CPP Heartbeat received: " + objectMapper.writeValueAsString(payload));
+            System.out.println("MiNiFi CPP Heartbeat received: " + objectMapper.writeValueAsString(payload));
 
-        return null;
+            C2Response response = c2Service.registerHeartBeat(payload);
+            logger.error("C2Response: " + objectMapper.writeValueAsString(response));
+            System.out.println("C2Response: " + objectMapper.writeValueAsString(response));
+            return Response.ok(response).build();
+        } catch (Exception ex) {
+            ex.printStackTrace();
+            logger.error("Could not process payload provided", ex);
+            logger.error("Payload: " + payload.toString());
+
+            return Response.serverError().build();
+        }
     }
+
+    @GET
+    @Path("/operations/supported")
+    public Response getSupportedOperations() {
+        if (logger.isDebugEnabled()) {
+            logger.debug("Getting list of currently supported operations");
+        }
+        return Response.ok(new SupportedOperations()).build();
+    }
+
+    @GET
+    @Path("/device/{deviceId}/operations")
+    public Response listOperationsHistoryForDevice(@PathParam("deviceId") String deviceId) {
+        if (logger.isDebugEnabled()) {
+            logger.debug("Retrieving operation history for device: " + deviceId);
+        }
+        List<C2Operation> ops = this.c2Service.getOperationHistoryForDevice(deviceId);
+        return Response.ok(ops).build();
+    }
+
+    @POST
+    @Path("/device/operation")
+    public Response createOperationForDevice(CreateOperationRequest cor) {
+        if (logger.isDebugEnabled()) {
+            logger.debug("Creating opeartion for device Id: " + cor.getDeviceId());
+        }
+        this.c2Service.createOperationForDevice(cor);
+        return Response.ok(cor).build();
+    }
+
+    @GET
+    @Path("/device/{deviceId}/connections")
+    public Response getConnectionsForDevice(@PathParam("deviceId") String deviceId) {
+        if (logger.isDebugEnabled()) {
+            logger.debug("retrieving connections for device : " + deviceId);
+        }
+        return Response.ok(this.c2Service.getConnectionsForDevice(deviceId)).build();
+    }
+
+    @GET
+    @Path("/device/{deviceId}/components")
+    public Response getComponentsForDevice(@PathParam("deviceId") String deviceId) {
+        if (logger.isDebugEnabled()) {
+            logger.debug("retrieving connections for device : " + deviceId);
+        }
+        return Response.ok(this.c2Service.getComponentsForDevice(deviceId)).build();
+    }
+
+
+    @POST
+    @Path("/operation/ack")
+    public Response ackOperations(String payload) {
+        JSONObject jsonObject = new JSONObject(payload);
+        long operationId = jsonObject.getLong("operationid");
+        if (logger.isDebugEnabled()) {
+            logger.debug("Acking operation with ID : " + operationId);
+        }
+        try {
+            this.c2Service.ackOperation(operationId);
+            return Response.ok().build();
+        } catch (Exception ex) {
+            logger.error(ex.getMessage());
+            return Response.serverError().build();
+        }
+    }
+
+
+    @GET
+    @Path("/device/config/{deviceId}")
+    public Response getDeviceFlowFileConfiguration(@PathParam("deviceId") String deviceId) {
+        if (logger.isDebugEnabled()) {
+            logger.debug("Getting latest FlowFile configuration for device: " + deviceId);
+        }
+        C2DeviceFlowFileConfig ffc = this.c2Service.getDeviceLatestFlowFileConfig(deviceId);
+        return Response.ok(ffc).build();
+    }
+
+    @GET
+    @Path("/device/configfile/{device_config_id}")
+    public Response getFlowFile(@PathParam("device_config_id") String device_config_id) {
+        if (logger.isDebugEnabled()) {
+            logger.debug("Getting latest FlowFile configuration for device: " + device_config_id);
+        }
+        String file_contents = this.c2Service.getDeviceFlowFileConfig(device_config_id);
+        return Response.ok(file_contents).build();
+    }
+
+    @GET
+    @Path("/device{deviceId : (/deviceId)?}")
+    public Response getDevice(@PathParam("deviceId") String deviceId) {
+        if (logger.isDebugEnabled()) {
+            if (deviceId == null) {
+                logger.debug("Retrieving all devices from DB");
+            } else {
+                logger.debug("Retrieving device with ID: " + deviceId);
+            }
+        }
+
+        return Response.ok(c2Service.getDevice(deviceId)).build();
+    }
+
+
+    @GET
+    @Path("/device/{deviceId}/information")
+    public Response getDeviceInformation(@PathParam("deviceId") String deviceId) {
+        if (logger.isDebugEnabled()) {
+            if (deviceId == null) {
+                logger.debug("Retrieving all devices from DB");
+            } else {
+                logger.debug("Retrieving device with ID: " + deviceId);
+            }
+        }
+
+        return Response.ok(c2Service.getDevice(deviceId)).build();
+    }
+
+    @GET
+    @Path("/hud")
+    public Response getC2HUD() {
+        if (logger.isDebugEnabled()) {
+            logger.debug("Retrieving C2 HUD Metrics");
+        }
+        return Response.ok(this.c2Service.getC2HUD()).build();
+    }
+
 
     @GET
     @Path("/status")
     @Produces(MediaType.APPLICATION_JSON)
     public Response getStatus(@Context HttpServletRequest request, @Context UriInfo uriInfo) {
-        return Response.ok().type(MediaType.APPLICATION_JSON_TYPE).entity("You're doing a-okay at the C2 endpoint").build();
+        JSONObject response = new JSONObject();
+        response.put("message", "You're doing a-okay at the C2 endpoint");
+        return Response.ok().type(MediaType.APPLICATION_JSON_TYPE).entity(response.toString()).build();
     }
 
     @GET
