@@ -151,8 +151,6 @@ public class C2Service {
     }
 
     @POST
-    @GET
-    @PUT
     @Path("/heartbeat")
     @Produces(MediaType.APPLICATION_JSON)
     public Response consumeHeartbeat(@Context HttpServletRequest request, @Context UriInfo uriInfo) {
