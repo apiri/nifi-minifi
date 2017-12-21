@@ -28,6 +28,7 @@ import com.wordnik.swagger.annotations.Api;
 import org.apache.nifi.minifi.c2.api.Configuration;
 import org.apache.nifi.minifi.c2.api.ConfigurationProvider;
 import org.apache.nifi.minifi.c2.api.ConfigurationProviderException;
+import org.apache.nifi.minifi.c2.api.HeartbeatConsumer;
 import org.apache.nifi.minifi.c2.api.InvalidParameterException;
 import org.apache.nifi.minifi.c2.api.security.authorization.AuthorizationException;
 import org.apache.nifi.minifi.c2.api.security.authorization.Authorizer;
@@ -75,14 +76,16 @@ public class ConfigService {
     private final ObjectMapper objectMapper;
     private final Supplier<ConfigurationProviderInfo> configurationProviderInfo;
     private final LoadingCache<ConfigurationProviderKey, ConfigurationProviderValue> configurationCache;
+    private final HeartbeatConsumer heartbeatConsumer;
 
-    public ConfigService(List<ConfigurationProvider> configurationProviders, Authorizer authorizer) {
-        this(configurationProviders, authorizer, 1000, 300_000);
+    public ConfigService(List<ConfigurationProvider> configurationProviders, Authorizer authorizer, HeartbeatConsumer heartbeatConsumer) {
+        this(configurationProviders, authorizer, heartbeatConsumer, 1000, 300_000);
     }
 
-    public ConfigService(List<ConfigurationProvider> configurationProviders, Authorizer authorizer, long maximumCacheSize, long cacheTtlMillis) {
+    public ConfigService(List<ConfigurationProvider> configurationProviders, Authorizer authorizer, HeartbeatConsumer heartbeatConsumer, long maximumCacheSize, long cacheTtlMillis) {
         this.authorizer = authorizer;
         this.objectMapper = new ObjectMapper();
+        this.heartbeatConsumer = heartbeatConsumer;
         if (configurationProviders == null || configurationProviders.size() == 0) {
             throw new IllegalArgumentException("Expected at least one configuration provider");
         }

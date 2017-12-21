@@ -20,6 +20,13 @@
        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
        xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-3.1.xsd">
 
+
+    <context:component-scan base-package="org.apache.nifi.device.registry.resource.c2.dao, heartbeat" />
+
+    <bean id="heartbeatService" class="org.apache.nifi.minifi.c2.heartbeat.HeartbeatConsumerImpl" scope="singleton">
+
+    </bean>
+
     <bean id="configService" class="org.apache.nifi.minifi.c2.service.ConfigService" scope="singleton">
         <constructor-arg>
             <list>
@@ -86,6 +93,9 @@
             <bean class="org.apache.nifi.minifi.c2.security.authorization.GrantedAuthorityAuthorizer">
                 <constructor-arg value="classpath:authorizations.yaml"/>
             </bean>
+        </constructor-arg>
+        <constructor-arg>
+            <ref local="heartbeatService" />
         </constructor-arg>
     </bean>
     <bean id="c2Service" class="org.apache.nifi.minifi.c2.service.C2Service" scope="singleton">

@@ -16,6 +16,16 @@
             <artifactId>minifi-c2-api</artifactId>
             <version>0.2.1-SNAPSHOT</version>
         </dependency>
+        <dependency>
+            <groupId>org.springframework</groupId>
+            <artifactId>spring-beans</artifactId>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework</groupId>
+            <artifactId>spring-context</artifactId>
+            <scope>provided</scope>
+        </dependency>
     </dependencies>
 
 </project>
