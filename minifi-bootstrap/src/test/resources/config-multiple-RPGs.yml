@@ -17,47 +17,6 @@ Flow Controller:
     name: MiNiFi Flow
     comment:
 
-Core Properties:
-    flow controller graceful shutdown period: 10 sec
-    flow service write delay interval: 500 ms
-    administrative yield duration: 30 sec
-    bored yield duration: 10 millis
-    max concurrent threads: 1
-
-FlowFile Repository:
-    partitions: 256
-    checkpoint interval: 2 mins
-    always sync: false
-    Swap:
-        threshold: 20000
-        in period: 5 sec
-        in threads: 1
-        out period: 5 sec
-        out threads: 4
-
-Content Repository:
-    content claim max appendable size: 10 MB
-    content claim max flow files: 100
-    always sync: false
-
-Component Status Repository:
-    buffer size: 1440
-    snapshot frequency: 1 min
-
-Security Properties:
-    keystore: /tmp/ssl/localhost-ks.jks
-    keystore type: JKS
-    keystore password: localtest
-    key password: localtest
-    truststore: /tmp/ssl/localhost-ts.jks
-    truststore type: JKS
-    truststore password: localtest
-    ssl protocol: TLS
-    Sensitive Props:
-        key:
-        algorithm: PBEWITHMD5AND256BITAES-CBC-OPENSSL
-        provider: BC
-
 Processors:
     - name: TailAppLog
       class: org.apache.nifi.processors.standard.TailFile
@@ -115,13 +74,3 @@ Remote Processing Groups:
             max concurrent tasks: 1
             use compression: false
 
-Provenance Reporting:
-    comment:
-    scheduling strategy: TIMER_DRIVEN
-    scheduling period: 30 sec
-    destination url: https://localhost:8080/
-    port name: provenance
-    originating url: http://${hostname(true)}:8081/nifi
-    use compression: true
-    timeout: 30 secs
-    batch size: 1000

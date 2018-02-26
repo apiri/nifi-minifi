@@ -15,17 +15,31 @@
  * limitations under the License.
  */
 
-package org.apache.nifi.minifi.commons.schema;
+package org.apache.nifi.minifi.commons.schema.v3;
 
+import org.apache.nifi.minifi.commons.schema.ComponentStatusRepositorySchema;
+import org.apache.nifi.minifi.commons.schema.ConfigSchema;
+import org.apache.nifi.minifi.commons.schema.ConnectionSchema;
+import org.apache.nifi.minifi.commons.schema.ContentRepositorySchema;
+import org.apache.nifi.minifi.commons.schema.FlowControllerSchema;
+import org.apache.nifi.minifi.commons.schema.FlowFileRepositorySchema;
+import org.apache.nifi.minifi.commons.schema.FunnelSchema;
+import org.apache.nifi.minifi.commons.schema.PortSchema;
+import org.apache.nifi.minifi.commons.schema.ProcessorSchema;
+import org.apache.nifi.minifi.commons.schema.ProvenanceReportingSchema;
+import org.apache.nifi.minifi.commons.schema.ProvenanceRepositorySchema;
+import org.apache.nifi.minifi.commons.schema.RemotePortSchema;
+import org.apache.nifi.minifi.commons.schema.SecurityPropertiesSchema;
 import org.apache.nifi.minifi.commons.schema.common.BaseSchema;
 import org.apache.nifi.minifi.commons.schema.common.CollectionOverlap;
 import org.apache.nifi.minifi.commons.schema.common.ConvertableSchema;
 import org.apache.nifi.minifi.commons.schema.common.StringUtil;
-import org.apache.nifi.minifi.commons.schema.common.WritableSchema;
+import org.apache.nifi.minifi.commons.schema.v2.CorePropertiesSchemaV2;
+import org.apache.nifi.minifi.commons.schema.v2.ProcessGroupSchemaV2;
+import org.apache.nifi.minifi.commons.schema.v2.RemoteProcessGroupSchemaV2;
 
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -36,16 +50,14 @@ import static org.apache.nifi.minifi.commons.schema.common.CommonPropertyKeys.CO
 import static org.apache.nifi.minifi.commons.schema.common.CommonPropertyKeys.CORE_PROPS_KEY;
 import static org.apache.nifi.minifi.commons.schema.common.CommonPropertyKeys.FLOWFILE_REPO_KEY;
 import static org.apache.nifi.minifi.commons.schema.common.CommonPropertyKeys.FLOW_CONTROLLER_PROPS_KEY;
-import static org.apache.nifi.minifi.commons.schema.common.CommonPropertyKeys.NIFI_PROPERTIES_OVERRIDES_KEY;
 import static org.apache.nifi.minifi.commons.schema.common.CommonPropertyKeys.PROVENANCE_REPORTING_KEY;
 import static org.apache.nifi.minifi.commons.schema.common.CommonPropertyKeys.PROVENANCE_REPO_KEY;
 import static org.apache.nifi.minifi.commons.schema.common.CommonPropertyKeys.SECURITY_PROPS_KEY;
 
-public class ConfigSchema extends BaseSchema implements WritableSchema, ConvertableSchema<ConfigSchema> {
-    public static final int CONFIG_VERSION = 4;
+public class ConfigSchemaV3 extends BaseSchema implements ConvertableSchema<ConfigSchema> {
+    public static final int CONFIG_VERSION = 2;
     public static final String VERSION = "MiNiFi Config Version";
     public static final String FOUND_THE_FOLLOWING_DUPLICATE_REMOTE_INPUT_PORT_IDS = "Found the following duplicate remote input port ids: ";
-    public static final String FOUND_THE_FOLLOWING_DUPLICATE_REMOTE_OUTPUT_PORT_IDS = "Found the following duplicate remote output port ids: ";
     public static final String FOUND_THE_FOLLOWING_DUPLICATE_INPUT_PORT_IDS = "Found the following duplicate input port ids: ";
     public static final String FOUND_THE_FOLLOWING_DUPLICATE_OUTPUT_PORT_IDS = "Found the following duplicate output port ids: ";
     public static final String FOUND_THE_FOLLOWING_DUPLICATE_IDS = "Found the following ids that occur both in more than one Processor(s), Input Port(s), Output Port(s) and/or Remote Input Port(s): ";
@@ -53,47 +65,39 @@ public class ConfigSchema extends BaseSchema implements WritableSchema, Converta
     public static final String HAS_INVALID_SOURCE_ID = " has invalid source id ";
     public static final String HAS_INVALID_DESTINATION_ID = " has invalid destination id ";
     public static final String FOUND_THE_FOLLOWING_DUPLICATE_PROCESSOR_IDS = "Found the following duplicate processor ids: ";
-    public static final String FOUND_THE_FOLLOWING_DUPLICATE_CONTROLLER_SERVICE_IDS = "Found the following duplicate controller service ids: ";
     public static final String FOUND_THE_FOLLOWING_DUPLICATE_CONNECTION_IDS = "Found the following duplicate connection ids: ";
     public static final String FOUND_THE_FOLLOWING_DUPLICATE_FUNNEL_IDS = "Found the following duplicate funnel ids: ";
     public static final String FOUND_THE_FOLLOWING_DUPLICATE_REMOTE_PROCESS_GROUP_NAMES = "Found the following duplicate remote process group names: ";
     public static String TOP_LEVEL_NAME = "top level";
+
     private FlowControllerSchema flowControllerProperties;
-    private CorePropertiesSchema coreProperties;
+    private CorePropertiesSchemaV2 coreProperties;
     private FlowFileRepositorySchema flowfileRepositoryProperties;
     private ContentRepositorySchema contentRepositoryProperties;
     private ComponentStatusRepositorySchema componentStatusRepositoryProperties;
     private SecurityPropertiesSchema securityProperties;
-    private ProcessGroupSchema processGroupSchema;
+    private ProcessGroupSchemaV2 processGroupSchema;
     private ProvenanceReportingSchema provenanceReportingProperties;
-
     private ProvenanceRepositorySchema provenanceRepositorySchema;
 
-    private Map<String, String> nifiPropertiesOverrides;
-
-    public ConfigSchema(Map map) {
+    public ConfigSchemaV3(Map map) {
         this(map, Collections.emptyList());
     }
 
-    public ConfigSchema(Map map, List<String> validationIssues) {
+    public ConfigSchemaV3(Map map, List<String> validationIssues) {
         validationIssues.stream().forEach(this::addValidationIssue);
         flowControllerProperties = getMapAsType(map, FLOW_CONTROLLER_PROPS_KEY, FlowControllerSchema.class, TOP_LEVEL_NAME, true);
 
-        coreProperties = getMapAsType(map, CORE_PROPS_KEY, CorePropertiesSchema.class, TOP_LEVEL_NAME, false);
+        coreProperties = getMapAsType(map, CORE_PROPS_KEY, CorePropertiesSchemaV2.class, TOP_LEVEL_NAME, false);
         flowfileRepositoryProperties = getMapAsType(map, FLOWFILE_REPO_KEY, FlowFileRepositorySchema.class, TOP_LEVEL_NAME, false);
         contentRepositoryProperties = getMapAsType(map, CONTENT_REPO_KEY, ContentRepositorySchema.class, TOP_LEVEL_NAME, false);
         provenanceRepositorySchema = getMapAsType(map, PROVENANCE_REPO_KEY, ProvenanceRepositorySchema.class, TOP_LEVEL_NAME, false);
         componentStatusRepositoryProperties = getMapAsType(map, COMPONENT_STATUS_REPO_KEY, ComponentStatusRepositorySchema.class, TOP_LEVEL_NAME, false);
         securityProperties = getMapAsType(map, SECURITY_PROPS_KEY, SecurityPropertiesSchema.class, TOP_LEVEL_NAME, false);
 
-        processGroupSchema = new ProcessGroupSchema(map, TOP_LEVEL_NAME);
+        processGroupSchema = new ProcessGroupSchemaV2(map, TOP_LEVEL_NAME);
 
         provenanceReportingProperties = getMapAsType(map, PROVENANCE_REPORTING_KEY, ProvenanceReportingSchema.class, TOP_LEVEL_NAME, false, false);
-
-        nifiPropertiesOverrides = (Map<String, String>) map.get(NIFI_PROPERTIES_OVERRIDES_KEY);
-        if (nifiPropertiesOverrides == null) {
-            nifiPropertiesOverrides = new HashMap<>();
-        }
 
         addIssuesIfNotNull(flowControllerProperties);
         addIssuesIfNotNull(coreProperties);
@@ -105,35 +109,30 @@ public class ConfigSchema extends BaseSchema implements WritableSchema, Converta
         addIssuesIfNotNull(provenanceReportingProperties);
         addIssuesIfNotNull(provenanceRepositorySchema);
 
-        List<ProcessGroupSchema> allProcessGroups = getAllProcessGroups(processGroupSchema);
+        List<ProcessGroupSchemaV2> allProcessGroups = getAllProcessGroups(processGroupSchema);
         List<ConnectionSchema> allConnectionSchemas = allProcessGroups.stream().flatMap(p -> p.getConnections().stream()).collect(Collectors.toList());
-        List<RemoteProcessGroupSchema> allRemoteProcessGroups = allProcessGroups.stream().flatMap(p -> p.getRemoteProcessGroups().stream()).collect(Collectors.toList());
+        List<RemoteProcessGroupSchemaV2> allRemoteProcessGroups = allProcessGroups.stream().flatMap(p -> p.getRemoteProcessGroups().stream()).collect(Collectors.toList());
 
         List<String> allProcessorIds = allProcessGroups.stream().flatMap(p -> p.getProcessors().stream()).map(ProcessorSchema::getId).collect(Collectors.toList());
-        List<String> allControllerServiceIds = allProcessGroups.stream().flatMap(p -> p.getControllerServices().stream()).map(ControllerServiceSchema::getId).collect(Collectors.toList());
         List<String> allFunnelIds = allProcessGroups.stream().flatMap(p -> p.getFunnels().stream()).map(FunnelSchema::getId).collect(Collectors.toList());
         List<String> allConnectionIds = allConnectionSchemas.stream().map(ConnectionSchema::getId).collect(Collectors.toList());
-        List<String> allRemoteProcessGroupNames = allRemoteProcessGroups.stream().map(RemoteProcessGroupSchema::getName).collect(Collectors.toList());
+        List<String> allRemoteProcessGroupNames = allRemoteProcessGroups.stream().map(RemoteProcessGroupSchemaV2::getName).collect(Collectors.toList());
         List<String> allRemoteInputPortIds = allRemoteProcessGroups.stream().filter(r -> r.getInputPorts() != null)
                 .flatMap(r -> r.getInputPorts().stream()).map(RemotePortSchema::getId).collect(Collectors.toList());
-        List<String> allRemoteOutputPortIds = allRemoteProcessGroups.stream().filter(r -> r.getOutputPorts() != null)
-                .flatMap(r -> r.getOutputPorts().stream()).map(RemotePortSchema::getId).collect(Collectors.toList());
         List<String> allInputPortIds = allProcessGroups.stream().flatMap(p -> p.getInputPortSchemas().stream()).map(PortSchema::getId).collect(Collectors.toList());
         List<String> allOutputPortIds = allProcessGroups.stream().flatMap(p -> p.getOutputPortSchemas().stream()).map(PortSchema::getId).collect(Collectors.toList());
 
         checkForDuplicates(this::addValidationIssue, FOUND_THE_FOLLOWING_DUPLICATE_PROCESSOR_IDS, allProcessorIds);
-        checkForDuplicates(this::addValidationIssue, FOUND_THE_FOLLOWING_DUPLICATE_CONTROLLER_SERVICE_IDS, allControllerServiceIds);
         checkForDuplicates(this::addValidationIssue, FOUND_THE_FOLLOWING_DUPLICATE_FUNNEL_IDS, allFunnelIds);
         checkForDuplicates(this::addValidationIssue, FOUND_THE_FOLLOWING_DUPLICATE_CONNECTION_IDS, allConnectionIds);
         checkForDuplicates(this::addValidationIssue, FOUND_THE_FOLLOWING_DUPLICATE_REMOTE_PROCESS_GROUP_NAMES, allRemoteProcessGroupNames);
         checkForDuplicates(this::addValidationIssue, FOUND_THE_FOLLOWING_DUPLICATE_REMOTE_INPUT_PORT_IDS, allRemoteInputPortIds);
-        checkForDuplicates(this::addValidationIssue, FOUND_THE_FOLLOWING_DUPLICATE_REMOTE_OUTPUT_PORT_IDS, allRemoteOutputPortIds);
         checkForDuplicates(this::addValidationIssue, FOUND_THE_FOLLOWING_DUPLICATE_INPUT_PORT_IDS, allInputPortIds);
         checkForDuplicates(this::addValidationIssue, FOUND_THE_FOLLOWING_DUPLICATE_OUTPUT_PORT_IDS, allOutputPortIds);
 
         // Potential connection sources and destinations need to have unique ids
-        CollectionOverlap<String> overlapResults = new CollectionOverlap<>(new HashSet<>(allProcessorIds), new HashSet<>(allRemoteInputPortIds), new HashSet<>(allRemoteOutputPortIds),
-                new HashSet<>(allInputPortIds), new HashSet<>(allOutputPortIds), new HashSet<>(allFunnelIds));
+        CollectionOverlap<String> overlapResults = new CollectionOverlap<>(new HashSet<>(allProcessorIds), new HashSet<>(allRemoteInputPortIds), new HashSet<>(allInputPortIds),
+                new HashSet<>(allOutputPortIds), new HashSet<>(allFunnelIds));
         if (overlapResults.getDuplicates().size() > 0) {
             addValidationIssue(FOUND_THE_FOLLOWING_DUPLICATE_IDS + overlapResults.getDuplicates().stream().sorted().collect(Collectors.joining(", ")));
         }
@@ -150,75 +149,15 @@ public class ConfigSchema extends BaseSchema implements WritableSchema, Converta
         });
     }
 
-    public static List<ProcessGroupSchema> getAllProcessGroups(ProcessGroupSchema processGroupSchema) {
-        List<ProcessGroupSchema> result = new ArrayList<>();
+    public static List<ProcessGroupSchemaV2> getAllProcessGroups(ProcessGroupSchemaV2 processGroupSchema) {
+        List<ProcessGroupSchemaV2> result = new ArrayList<>();
         addProcessGroups(processGroupSchema, result);
         return result;
     }
 
-    private static void addProcessGroups(ProcessGroupSchema processGroupSchema, List<ProcessGroupSchema> result) {
+    private static void addProcessGroups(ProcessGroupSchemaV2 processGroupSchema, List<ProcessGroupSchemaV2> result) {
         result.add(processGroupSchema);
         processGroupSchema.getProcessGroupSchemas().forEach(p -> addProcessGroups(p, result));
-    }
-
-    public Map<String, Object> toMap() {
-        Map<String, Object> result = mapSupplier.get();
-        result.put(VERSION, getVersion());
-        putIfNotNull(result, FLOW_CONTROLLER_PROPS_KEY, flowControllerProperties);
-        putIfNotNull(result, CORE_PROPS_KEY, coreProperties);
-        putIfNotNull(result, FLOWFILE_REPO_KEY, flowfileRepositoryProperties);
-        putIfNotNull(result, CONTENT_REPO_KEY, contentRepositoryProperties);
-        putIfNotNull(result, PROVENANCE_REPO_KEY, provenanceRepositorySchema);
-        putIfNotNull(result, COMPONENT_STATUS_REPO_KEY, componentStatusRepositoryProperties);
-        putIfNotNull(result, SECURITY_PROPS_KEY, securityProperties);
-        result.putAll(processGroupSchema.toMap());
-        putIfNotNull(result, PROVENANCE_REPORTING_KEY, provenanceReportingProperties);
-        result.put(NIFI_PROPERTIES_OVERRIDES_KEY, nifiPropertiesOverrides);
-        return result;
-    }
-
-    public FlowControllerSchema getFlowControllerProperties() {
-        return flowControllerProperties;
-    }
-
-    public CorePropertiesSchema getCoreProperties() {
-        return coreProperties;
-    }
-
-    public FlowFileRepositorySchema getFlowfileRepositoryProperties() {
-        return flowfileRepositoryProperties;
-    }
-
-    public ContentRepositorySchema getContentRepositoryProperties() {
-        return contentRepositoryProperties;
-    }
-
-    public SecurityPropertiesSchema getSecurityProperties() {
-        return securityProperties;
-    }
-
-    public void setSecurityProperties(SecurityPropertiesSchema securityProperties) {
-        this.securityProperties = securityProperties;
-    }
-
-    public ProcessGroupSchema getProcessGroupSchema() {
-        return processGroupSchema;
-    }
-
-    public ProvenanceReportingSchema getProvenanceReportingProperties() {
-        return provenanceReportingProperties;
-    }
-
-    public ComponentStatusRepositorySchema getComponentStatusRepositoryProperties() {
-        return componentStatusRepositoryProperties;
-    }
-
-    public ProvenanceRepositorySchema getProvenanceRepositorySchema() {
-        return provenanceRepositorySchema;
-    }
-
-    public Map<String, String> getNifiPropertiesOverrides() {
-        return nifiPropertiesOverrides;
     }
 
     @Override
@@ -228,6 +167,17 @@ public class ConfigSchema extends BaseSchema implements WritableSchema, Converta
 
     @Override
     public ConfigSchema convert() {
-        return this;
+        Map<String, Object> result = mapSupplier.get();
+        result.put(VERSION, getVersion());
+        putIfNotNull(result, FLOW_CONTROLLER_PROPS_KEY, flowControllerProperties);
+        putIfNotNull(result, CORE_PROPS_KEY, coreProperties.convert());
+        putIfNotNull(result, FLOWFILE_REPO_KEY, flowfileRepositoryProperties);
+        putIfNotNull(result, CONTENT_REPO_KEY, contentRepositoryProperties);
+        putIfNotNull(result, PROVENANCE_REPO_KEY, provenanceRepositorySchema);
+        putIfNotNull(result, COMPONENT_STATUS_REPO_KEY, componentStatusRepositoryProperties);
+        putIfNotNull(result, SECURITY_PROPS_KEY, securityProperties);
+        result.putAll(processGroupSchema.toMap());
+        putIfNotNull(result, PROVENANCE_REPORTING_KEY, provenanceReportingProperties);
+        return new ConfigSchema(result, getValidationIssues());
     }
 }
