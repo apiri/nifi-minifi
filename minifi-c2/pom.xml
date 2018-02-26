@@ -39,6 +39,7 @@ limitations under the License.
         <module>minifi-c2-jetty</module>
         <module>minifi-c2-provider-api</module>
         <module>minifi-c2-web-api</module>
+        <module>minifi-c2-client</module>
     </modules>
 
     <build>

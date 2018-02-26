@@ -18,6 +18,7 @@ package org.apache.nifi.minifi.bootstrap;
 
 import org.apache.commons.io.input.TeeInputStream;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.nifi.minifi.c2.C2HeartBeatService;
 import org.apache.nifi.minifi.bootstrap.configuration.ConfigurationChangeCoordinator;
 import org.apache.nifi.minifi.bootstrap.configuration.ConfigurationChangeException;
 import org.apache.nifi.minifi.bootstrap.configuration.ConfigurationChangeListener;
@@ -159,6 +160,8 @@ public class RunMiNiFi implements QueryableStatusAggregator, ConfigurationFileHo
 
     private ConfigurationChangeCoordinator changeCoordinator;
     private MiNiFiConfigurationChangeListener changeListener;
+
+    private C2HeartBeatService c2HeartbeatService;
 
     private final AtomicReference<ByteBuffer> currentConfigFileReference = new AtomicReference<>();
 
