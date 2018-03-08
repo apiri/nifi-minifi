@@ -8,7 +8,9 @@ import java.util.concurrent.ScheduledThreadPoolExecutor;
 public class C2HeartBeatService extends ScheduledThreadPoolExecutor implements HeartbeatReporter {
 
     private static final Logger log = LoggerFactory.getLogger(C2HeartBeatService.class);
+
     private final long heartbeatInterval;
+
     private C2Agent agent;
 
     public C2HeartBeatService(long interval) {
