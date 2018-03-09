@@ -4,32 +4,59 @@ import org.apache.nifi.minifi.c2.protocol.rest.GarconRestC2Protocol;
 
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
+import java.util.PriorityQueue;
+import java.util.Queue;
 import java.util.Random;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.Future;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.ScheduledThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 
 import static org.apache.nifi.minifi.c2.protocol.rest.GarconRestC2Protocol.DEFAULT_GARCON_PORT;
 
-public class C2Agent implements HeartbeatReporter {
+public class C2Agent extends ScheduledThreadPoolExecutor implements HeartbeatReporter {
+
+    private final AtomicReference<ScheduledFuture> execScheduledFutureRef = new AtomicReference<>();
+
+    protected static final int DEFAULT_THREADPOOL_SIZE = 2;
 
     protected final C2Protocol c2Protocol;
     protected final C2Serializer serializer;
     protected final C2Deserializer deserializer;
 
-    protected final List<C2Payload> responses = new ArrayList<>();
-    protected final List<C2Payload> requests = new ArrayList<>();
+    private final List<ScheduledFuture> scheduledTasks = new ArrayList<>();
+
+    protected final Queue<C2Payload> payloads = new PriorityQueue<>((obj, other) -> obj.isResponse() == other.isResponse() ? 0 : obj.isResponse() ? 1 : -1);
+
+    protected final Queue<C2Payload> requests = new ConcurrentLinkedQueue<>();
+    protected final Queue<C2Payload> responses = new ConcurrentLinkedQueue<>();
 
     public C2Agent() {
-        this.c2Protocol = new GarconRestC2Protocol("localhost", DEFAULT_GARCON_PORT);
-        this.serializer = new C2Serializer() {
-        };
-        this.deserializer = new C2Deserializer() {
-        };
+        this(DEFAULT_THREADPOOL_SIZE,
+                new GarconRestC2Protocol("localhost", DEFAULT_GARCON_PORT),
+                new C2Serializer() {
+                },
+                new C2Deserializer() {
+                }
+        );
+    }
+
+    public C2Agent(final int threadpoolSize, final C2Protocol protocol, final C2Serializer serializer, final C2Deserializer deserializer) {
+        super(threadpoolSize);
+        this.c2Protocol = protocol;
+        this.serializer = serializer;
+        this.deserializer = deserializer;
     }
 
 
     @Override
     public boolean sendHeartbeat() {
+        System.out.println("Enqueuing heartbeat");
         // serialize request
         final String testHeartBeat = "{\n" +
                 "   \"Components\" : {\n" +
@@ -89,10 +116,9 @@ public class C2Agent implements HeartbeatReporter {
         C2Payload payload = new C2Payload(Operation.HEARTBEAT, UUID.randomUUID().toString(), false, true);
         payload.setRawData(testHeartBeat.getBytes(StandardCharsets.UTF_8));
 
-        // perform request
-        c2Protocol.transmit(payload);
+        payloads.offer(payload);
+        requests.offer(payload);
 
-        // deserialize response
 
         return true;
     }
@@ -102,26 +128,66 @@ public class C2Agent implements HeartbeatReporter {
         return false;
     }
 
+
+    public void processQueues() {
+        System.out.println("Processing queues.  Running? = ");
+        System.out.println("Task count is " + getFutures().size());
+        // Make preference for queued responses before additional requests
+    }
+
+    public void consumeC2() {
+        System.out.println("Consuming C2 messages");
+    }
+
+    public void produceC2() {
+        System.out.println("Producing C2 messages");
+        System.out.println("Current # of messages enqueued: " + this.requests.size());
+        C2Payload payload = this.requests.poll();
+        if (payload == null) {
+            return;
+        }
+        c2Protocol.transmit(payload);
+    }
+
     @Override
     public boolean start() {
+        addFuture(this.scheduleAtFixedRate(() -> sendHeartbeat(), 0, 15, TimeUnit.SECONDS));
+        addFuture(this.scheduleAtFixedRate(
+                () -> this.produceC2(),
+                0, 3, TimeUnit.SECONDS));
+
+
+        addFuture(this.scheduleAtFixedRate(
+                () -> this.consumeC2(),
+                1, 3, TimeUnit.SECONDS));
+        addFuture(this.scheduleAtFixedRate(
+                () -> this.consumeC2(),
+                1, 3, TimeUnit.SECONDS));
         return false;
+    }
+
+    protected synchronized void addFuture(ScheduledFuture future) {
+        this.scheduledTasks.add(future);
+    }
+
+    protected synchronized List<Future> getFutures() {
+        return Collections.unmodifiableList(this.scheduledTasks);
     }
 
     @Override
     public boolean stop() {
-        return false;
+        this.shutdown();
+        return true;
     }
 
     @Override
     public boolean isRunning() {
-        return false;
+        return !(execScheduledFutureRef.get().isDone() && execScheduledFutureRef.get().isCancelled());
     }
 
     public static void main(String[] args) {
         C2Agent c2Agent = new C2Agent();
-        for (int i = 0; i < 10; i++) {
-            c2Agent.sendHeartbeat();
-        }
+        c2Agent.start();
     }
 
 }
