@@ -1,7 +1,6 @@
 package org.apache.nifi.minifi.c2.protocol.rest;
 
 import okhttp3.OkHttpClient;
-import org.apache.nifi.minifi.c2.C2Payload;
 import org.apache.nifi.minifi.c2.C2Protocol;
 
 public abstract class RestC2Protocol implements C2Protocol {
@@ -16,9 +15,6 @@ public abstract class RestC2Protocol implements C2Protocol {
         this.c2ServerAddress = c2serverAddress;
         this.c2ServerPort = c2ServerPort;
     }
-
-
-    public abstract void transmit(C2Payload payload);
 
     protected abstract String getHeartbeatEndpoint();
 

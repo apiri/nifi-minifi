@@ -1,6 +1,8 @@
 package org.apache.nifi.minifi.c2;
 
 import org.apache.nifi.minifi.c2.protocol.rest.GarconRestC2Protocol;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
@@ -20,6 +22,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import static org.apache.nifi.minifi.c2.protocol.rest.GarconRestC2Protocol.DEFAULT_GARCON_PORT;
 
 public class C2Agent extends ScheduledThreadPoolExecutor implements HeartbeatReporter {
+    private final Logger logger = LoggerFactory.getLogger(C2Agent.class);
 
     private final AtomicReference<ScheduledFuture> execScheduledFutureRef = new AtomicReference<>();
 
@@ -31,6 +34,7 @@ public class C2Agent extends ScheduledThreadPoolExecutor implements HeartbeatRep
 
     private final List<ScheduledFuture> scheduledTasks = new ArrayList<>();
 
+    /* Prefer the handling of responses first before initiating new heartbeats */
     protected final Queue<C2Payload> payloads = new PriorityQueue<>((obj, other) -> obj.isResponse() == other.isResponse() ? 0 : obj.isResponse() ? 1 : -1);
 
     protected final Queue<C2Payload> requests = new ConcurrentLinkedQueue<>();
@@ -56,7 +60,7 @@ public class C2Agent extends ScheduledThreadPoolExecutor implements HeartbeatRep
 
     @Override
     public boolean sendHeartbeat() {
-        System.out.println("Enqueuing heartbeat");
+        logger.debug("Enqueuing heartbeat");
         // serialize request
         final String testHeartBeat = "{\n" +
                 "   \"Components\" : {\n" +
@@ -117,9 +121,6 @@ public class C2Agent extends ScheduledThreadPoolExecutor implements HeartbeatRep
         payload.setRawData(testHeartBeat.getBytes(StandardCharsets.UTF_8));
 
         payloads.offer(payload);
-        requests.offer(payload);
-
-
         return true;
     }
 
@@ -130,39 +131,41 @@ public class C2Agent extends ScheduledThreadPoolExecutor implements HeartbeatRep
 
 
     public void processQueues() {
-        System.out.println("Processing queues.  Running? = ");
-        System.out.println("Task count is " + getFutures().size());
+        logger.debug("Processing queues.  Running? = ");
+        logger.debug("Task count is " + getFutures().size());
         // Make preference for queued responses before additional requests
     }
 
     public void consumeC2() {
-        System.out.println("Consuming C2 messages");
+        logger.debug("Consuming C2 messages");
+        logger.debug("enqueuing response, total number of responses is {}", responses.size());
     }
 
     public void produceC2() {
-        System.out.println("Producing C2 messages");
-        System.out.println("Current # of messages enqueued: " + this.requests.size());
-        C2Payload payload = this.requests.poll();
+        logger.debug("Producing C2 messages");
+        logger.debug("Current # of messages enqueued: " + this.requests.size());
+        C2Payload payload = this.payloads.poll();
         if (payload == null) {
             return;
         }
-        c2Protocol.transmit(payload);
+
+        if (payload.isResponse()) {
+            logger.debug("handling response");
+        } else {
+            final C2Payload responsePayload = c2Protocol.transmit(payload);
+            payloads.offer(responsePayload);
+            logger.debug("enqueuing response, total number of responses is {}", responses.size());
+        }
     }
 
     @Override
     public boolean start() {
         addFuture(this.scheduleAtFixedRate(() -> sendHeartbeat(), 0, 15, TimeUnit.SECONDS));
-        addFuture(this.scheduleAtFixedRate(
-                () -> this.produceC2(),
-                0, 3, TimeUnit.SECONDS));
-
-
-        addFuture(this.scheduleAtFixedRate(
-                () -> this.consumeC2(),
-                1, 3, TimeUnit.SECONDS));
-        addFuture(this.scheduleAtFixedRate(
-                () -> this.consumeC2(),
-                1, 3, TimeUnit.SECONDS));
+        for (int i = 0; i < 3; i++) {
+            addFuture(this.scheduleAtFixedRate(
+                    () -> this.processQueues(),
+                    0, 3, TimeUnit.SECONDS));
+        }
         return false;
     }
 
