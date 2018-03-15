@@ -16,6 +16,13 @@
  */
 package org.apache.nifi.minifi;
 
+import org.apache.nifi.minifi.commons.status.FlowStatusReport;
+import org.apache.nifi.minifi.status.StatusRequestException;
+import org.apache.nifi.nar.ExtensionManager;
+import org.apache.nifi.util.LimitingInputStream;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.IOException;
@@ -42,12 +49,6 @@ import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-
-import org.apache.nifi.minifi.commons.status.FlowStatusReport;
-import org.apache.nifi.minifi.status.StatusRequestException;
-import org.apache.nifi.util.LimitingInputStream;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class BootstrapListener {
 
@@ -191,30 +192,30 @@ public class BootstrapListener {
                                 final BootstrapRequest request = readRequest(socket.getInputStream());
                                 final BootstrapRequest.RequestType requestType = request.getRequestType();
 
+                                logger.debug("Received {} request from Bootstrap", requestType);
+
                                 switch (requestType) {
                                     case PING:
-                                        logger.debug("Received PING request from Bootstrap; responding");
                                         echoPing(socket.getOutputStream());
                                         logger.debug("Responded to PING request from Bootstrap");
                                         break;
                                     case RELOAD:
-                                        logger.info("Received RELOAD request from Bootstrap");
                                         echoReload(socket.getOutputStream());
                                         minifi.shutdownHook(true);
                                         return;
                                     case SHUTDOWN:
-                                        logger.info("Received SHUTDOWN request from Bootstrap");
                                         echoShutdown(socket.getOutputStream());
                                         minifi.shutdownHook(false);
                                         return;
                                     case DUMP:
-                                        logger.info("Received DUMP request from Bootstrap");
                                         writeDump(socket.getOutputStream());
                                         break;
                                     case FLOW_STATUS_REPORT:
-                                        logger.info("Received FLOW_STATUS_REPORT request from Bootstrap");
                                         String flowStatusRequestString = request.getArgs()[0];
                                         writeStatusReport(flowStatusRequestString, socket.getOutputStream());
+                                        break;
+                                    case GENERATE_MANIFEST:
+                                        writeManifest(socket.getOutputStream());
                                         break;
                                 }
                             } catch (final Throwable t) {
@@ -346,6 +347,26 @@ public class BootstrapListener {
         writer.flush();
     }
 
+    private static void writeManifest(final OutputStream out) throws IOException, ClassNotFoundException {
+
+        ManifestGenerator mfg = new ManifestGenerator();
+        ExtensionManager.logClassLoaderMapping();
+
+
+
+        final BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(out));
+
+        final StringBuilder sb = new StringBuilder();
+        sb.append("Manifest!");
+        sb.append("Manifest!");
+        sb.append("Manifest!");
+        sb.append("Manifest!");
+
+
+        writer.write(sb.toString());
+        writer.flush();
+    }
+
     private void echoPing(final OutputStream out) throws IOException {
         out.write("PING\n".getBytes(StandardCharsets.UTF_8));
         out.flush();
@@ -406,7 +427,8 @@ public class BootstrapListener {
             SHUTDOWN,
             DUMP,
             PING,
-            FLOW_STATUS_REPORT;
+            FLOW_STATUS_REPORT,
+            GENERATE_MANIFEST;
         }
 
         private final RequestType requestType;
