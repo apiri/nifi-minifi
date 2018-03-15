@@ -129,6 +129,7 @@ public class MiNiFi {
         ExtensionManager.discoverExtensions(systemBundle, narBundles);
         ExtensionManager.logClassLoaderMapping();
 
+
         // Enrich the flow xml using the Extension Manager mapping
         final FlowParser flowParser = new FlowParser();
         final FlowEnricher flowEnricher = new FlowEnricher(this, flowParser, properties);

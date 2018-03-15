@@ -320,7 +320,7 @@ case "$1" in
     install)
         install "$@"
         ;;
-    start|stop|run|status|flowStatus|dump|env)
+    start|stop|run|status|flowStatus|dump|env|generate-manifest)
         main "$@"
         exit $EXIT_STATUS
         ;;
@@ -331,6 +331,6 @@ case "$1" in
         exit $EXIT_STATUS
     ;;
     *)
-        echo "Usage minifi {start|stop|run|restart|status|flowStatus|dump|install}"
+        echo "Usage minifi {start|stop|run|restart|status|flowStatus|dump|env|install|generate-manifest}"
         ;;
 esac
