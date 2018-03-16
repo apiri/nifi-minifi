@@ -18,12 +18,19 @@ package org.apache.nifi.minifi.bootstrap;
 
 import org.apache.commons.io.input.TeeInputStream;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.nifi.bundle.Bundle;
 import org.apache.nifi.minifi.bootstrap.configuration.ConfigurationChangeCoordinator;
 import org.apache.nifi.minifi.bootstrap.configuration.ConfigurationChangeException;
 import org.apache.nifi.minifi.bootstrap.configuration.ConfigurationChangeListener;
 import org.apache.nifi.minifi.bootstrap.status.PeriodicStatusReporter;
 import org.apache.nifi.minifi.bootstrap.util.ConfigTransformer;
 import org.apache.nifi.minifi.commons.status.FlowStatusReport;
+import org.apache.nifi.nar.ExtensionManager;
+import org.apache.nifi.nar.ExtensionMapping;
+import org.apache.nifi.nar.NarClassLoaders;
+import org.apache.nifi.nar.NarUnpacker;
+import org.apache.nifi.nar.SystemBundle;
+import org.apache.nifi.util.NiFiProperties;
 import org.apache.nifi.util.Tuple;
 import org.apache.nifi.util.file.FileUtils;
 import org.slf4j.Logger;
@@ -98,7 +105,6 @@ import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
 public class RunMiNiFi implements QueryableStatusAggregator, ConfigurationFileHolder {
 
     public static final String DEFAULT_CONFIG_FILE = "./conf/bootstrap.conf";
-    public static final String DEFAULT_NIFI_PROPS_FILE = "./conf/nifi.properties";
     public static final String DEFAULT_JAVA_CMD = "java";
     public static final String DEFAULT_PID_DIR = "bin";
     public static final String DEFAULT_LOG_DIR = "./logs";
@@ -729,51 +735,86 @@ public class RunMiNiFi implements QueryableStatusAggregator, ConfigurationFileHo
      *
      * @throws IOException if any issues occur while writing the dump file
      */
-    public void generateManifest(final File manifestFile) throws IOException, InterruptedException {
+    public void generateManifest(final File manifestFile) throws IOException {
         final Logger logger = defaultLogger;    // print to bootstrap log file by default
-        final Integer port = getCurrentPort(logger);
-        if (port == null) {
-            logger.info("Apache MiNiFi is not currently running.");
-            return;
+
+        final String confDir = getBootstrapProperties().getProperty(CONF_DIR_KEY);
+        final File configFile = new File(getBootstrapProperties().getProperty(MINIFI_CONFIG_FILE_KEY));
+        try (InputStream inputStream = new FileInputStream(configFile)) {
+            logger.info("Performing transformation of config");
+            ByteBuffer tempConfigFile = performTransformation(inputStream, confDir);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
         }
 
-        final Properties minifiProps = loadProperties(logger);
-        final String secretKey = minifiProps.getProperty("secret.key");
+        final NiFiProperties properties = NiFiProperties.createBasicNiFiProperties(confDir+"/nifi.properties", null);
 
-        final StringBuilder sb = new StringBuilder();
-        try (final Socket socket = new Socket()) {
-            logger.debug("Connecting to MiNiFi instance");
-            socket.setSoTimeout(60000);
-            socket.connect(new InetSocketAddress("localhost", port));
-            logger.debug("Established connection to MiNiFi instance.");
-            socket.setSoTimeout(60000);
 
-            logger.debug("Sending GENERATE_MANIFEST Command to port {}", port);
-            final OutputStream out = socket.getOutputStream();
-            out.write((GENERATE_MANIFEST_CMD + " " + secretKey + "\n").getBytes(StandardCharsets.UTF_8));
-            out.flush();
+        final Bundle systemBundle = SystemBundle.create(properties);
 
-            final InputStream in = socket.getInputStream();
-            try (final BufferedReader reader = new BufferedReader(new InputStreamReader(in))) {
-                String line;
-                while ((line = reader.readLine()) != null) {
-                    sb.append(line).append("\n");
+
+        // expand the nars
+        final ExtensionMapping extensionMapping = NarUnpacker.unpackNars(properties, systemBundle);
+        NarClassLoaders narClassLoaders = NarClassLoaders.getInstance();
+
+        try {
+            // load the extensions classloaders
+            narClassLoaders.init(properties.getFrameworkWorkingDirectory(), properties.getExtensionsWorkingDirectory());
+
+            // load the framework classloader
+            final ClassLoader frameworkClassLoader = narClassLoaders.getFrameworkBundle().getClassLoader();
+            if (frameworkClassLoader == null) {
+                throw new IllegalStateException("Unable to find the framework NAR ClassLoader.");
+            }
+
+            final Set<Bundle> narBundles = NarClassLoaders.getInstance().getBundles();
+
+            // discover the extensions
+            ExtensionManager.discoverExtensions(systemBundle, narBundles);
+            final String dump = ExtensionManager.getExtensions().toString();
+            if (manifestFile == null) {
+                logger.info(dump);
+            } else {
+                try (final FileOutputStream fos = new FileOutputStream(manifestFile)) {
+                    fos.write(dump.getBytes(StandardCharsets.UTF_8));
                 }
+                // we want to log to the console (by default) that we wrote the thread dump to the specified file
+                cmdLogger.info("Successfully wrote manifest to {}", manifestFile.getAbsolutePath());
             }
+        } catch (ClassNotFoundException cnfe) {
+            logger.error("Could not perform successful discovery of extensions.");
         }
+//
+//
+//        final Properties minifiProps = loadProperties(logger);
+//        final String secretKey = minifiProps.getProperty("secret.key");
+//
+//        final StringBuilder sb = new StringBuilder();
+//        try (final Socket socket = new Socket()) {
+//            logger.debug("Connecting to MiNiFi instance");
+//            socket.setSoTimeout(60000);
+//            socket.connect(new InetSocketAddress("localhost", port));
+//            logger.debug("Established connection to MiNiFi instance.");
+//            socket.setSoTimeout(60000);
+//
+//            logger.debug("Sending GENERATE_MANIFEST Command to port {}", port);
+//            final OutputStream out = socket.getOutputStream();
+//            out.write((GENERATE_MANIFEST_CMD + " " + secretKey + "\n").getBytes(StandardCharsets.UTF_8));
+//            out.flush();
+//
+//            final InputStream in = socket.getInputStream();
+//            try (final BufferedReader reader = new BufferedReader(new InputStreamReader(in))) {
+//                String line;
+//                while ((line = reader.readLine()) != null) {
+//                    sb.append(line).append("\n");
+//                }
+//            }
+//        }
+//
+//        final String dump = sb.toString();
 
-        final String dump = sb.toString();
-        if (manifestFile == null) {
-            logger.info(dump);
-        } else {
-            try (final FileOutputStream fos = new FileOutputStream(manifestFile)) {
-                fos.write(dump.getBytes(StandardCharsets.UTF_8));
-            }
-            // we want to log to the console (by default) that we wrote the thread dump to the specified file
-            cmdLogger.info("Successfully wrote manifest to {}", manifestFile.getAbsolutePath());
-        }
-
-        stop();
+//
+//        stop();
 
     }
 
