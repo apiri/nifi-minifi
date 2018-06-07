@@ -18,10 +18,9 @@ limitations under the License.
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <parent>
-        <groupId>org.apache</groupId>
-        <artifactId>apache</artifactId>
-        <version>19</version>
-        <relativePath />
+        <groupId>org.apache.nifi</groupId>
+        <artifactId>nifi</artifactId>
+        <version>1.7.0-SNAPSHOT</version>
     </parent>
 
     <groupId>org.apache.nifi.minifi</groupId>
@@ -39,8 +38,6 @@ limitations under the License.
         <module>minifi-assembly</module>
         <module>minifi-toolkit</module>
         <module>minifi-docker</module>
-        <module>minifi-c2</module>
-        <module>minifi-integration-tests</module>
     </modules>
 
     <url>http://nifi.apache.org/minifi</url>
@@ -98,7 +95,7 @@ limitations under the License.
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
         <inceptionYear>2016</inceptionYear>
         <org.slf4j.version>1.7.25</org.slf4j.version>
-        <org.apache.nifi.version>1.6.0</org.apache.nifi.version>
+        <org.apache.nifi.version>1.7.0-SNAPSHOT</org.apache.nifi.version>
         <logback.version>1.2.3</logback.version>
         <jetty.version>9.4.3.v20170317</jetty.version>
         <jersey.version>2.26</jersey.version>
