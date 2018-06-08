@@ -53,10 +53,6 @@ limitations under the License.
             <groupId>org.slf4j</groupId>
             <artifactId>jul-to-slf4j</artifactId>
         </dependency>
-        <dependency>
-            <groupId>org.apache.nifi.minifi</groupId>
-            <artifactId>minifi-api</artifactId>
-        </dependency>
     </dependencies>
 
 </project>

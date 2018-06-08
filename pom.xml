@@ -31,7 +31,6 @@ limitations under the License.
 
     <modules>
         <module>minifi-commons</module>
-        <module>minifi-api</module>
         <module>minifi-bootstrap</module>
         <module>minifi-nar-bundles</module>
         <module>minifi-docs</module>
@@ -139,11 +138,6 @@ limitations under the License.
             <dependency>
                 <groupId>org.apache.nifi.minifi</groupId>
                 <artifactId>minifi-utils</artifactId>
-                <version>0.5.0-SNAPSHOT</version>
-            </dependency>
-            <dependency>
-                <groupId>org.apache.nifi.minifi</groupId>
-                <artifactId>minifi-api</artifactId>
                 <version>0.5.0-SNAPSHOT</version>
             </dependency>
             <dependency>
