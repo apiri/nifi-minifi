@@ -49,7 +49,7 @@ public class ConfigurationChangeCoordinatorTest {
 
     @Test
     public void testInit() throws Exception {
-        properties.put("nifi.minifi.notifier.ingestors", "org.apache.nifi.minifi.bootstrap.configuration.ingestors.RestChangeIngestor");
+        properties.put("nifi.minifi.notifier.ingestors", "RestChangeIngestor");
         final ConfigurationChangeListener testListener = Mockito.mock(ConfigurationChangeListener.class);
         coordinatorSpy.initialize(properties, Mockito.mock(ConfigurationFileHolder.class), Collections.singleton(testListener));
     }

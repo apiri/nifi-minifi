@@ -44,14 +44,14 @@ After a new config is determined to be new, the MiNiFi agent will attempt to res
 The configuration for Warm-Redeploy is done in the bootstrap.conf and primarily revolve around the Config Change Ingestors. The configuration in the bootstrap.conf is done using the "nifi.minifi.notifier.ingestors" key followed by the full path name of the desired Ingestor implementation to run. Use a comma separated list  to define more than one Ingestor implementation. For example:
 
 ```
-nifi.minifi.notifier.ingestors=org.apache.nifi.minifi.bootstrap.configuration.ingestors.PullHttpChangeIngestor
+nifi.minifi.notifier.ingestors=PullHttpChangeIngestor
 ```
 
 Ingestor specific configuration is also necessary and done in the bootstrap.conf as well. Specifics for each are detailed below.
 
 ## FileChangeIngestor
 
-class name: org.apache.nifi.minifi.bootstrap.configuration.ingestors.FileChangeIngestor
+class name: FileChangeIngestor
 
 This Config Change Ingestor watches a file and when the file is updated, the file is ingested as a new config.
 
@@ -67,7 +67,7 @@ nifi.minifi.notifier.ingestors.file.differentiator | Which differentiator to use
 
 ## RestChangeIngestor
 
-class name: org.apache.nifi.minifi.bootstrap.configuration.ingestors.RestChangeIngestor
+class name: RestChangeIngestor
 
 This Config Change Ingestor sets up a light-weight Jetty HTTP(S) REST service in order to listen to HTTP(S) requests. A potential new configuration is sent via a POST request with the BODY being the potential new config.
 
@@ -96,7 +96,7 @@ nifi.minifi.notifier.ingestors.receive.http.differentiator | Which differentiato
 
 ## PullHttpChangeIngestor
 
-class name: org.apache.nifi.minifi.bootstrap.configuration.ingestors.PullHttpChangeIngestor
+class name: PullHttpChangeIngestor
 
 This Config Change Ingestor periodically sends a GET request to a REST endpoint using HTTP(S) to order to pull the potential new config.
 
