@@ -45,11 +45,11 @@ Component Status Repository:
 Security Properties:
   keystore: /tmp/ssl/localhost-ks.jks
   keystore type: JKS
-  keystore password: localtest
-  key password: localtest
+  keystore password: enc{localtest}
+  key password: enc{localtest}
   truststore: /tmp/ssl/localhost-ts.jks
   truststore type: JKS
-  truststore password: localtest
+  truststore password: enc{localtest}
   ssl protocol: TLS
   Sensitive Props:
     key: ''
