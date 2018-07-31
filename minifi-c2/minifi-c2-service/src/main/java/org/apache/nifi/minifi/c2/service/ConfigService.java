@@ -17,6 +17,7 @@
 
 package org.apache.nifi.minifi.c2.service;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Supplier;
 import com.google.common.base.Suppliers;
@@ -39,6 +40,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.GET;
+import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
 import javax.ws.rs.WebApplicationException;
@@ -63,9 +65,9 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
-@Path("/config")
+@Path("/")
 @Api(
-        value = "/config",
+        value = "/",
         description = "Provides configuration for MiNiFi instances"
 )
 public class ConfigService {
@@ -78,6 +80,7 @@ public class ConfigService {
     public ConfigService(List<ConfigurationProvider> configurationProviders, Authorizer authorizer) {
         this(configurationProviders, authorizer, 1000, 300_000);
     }
+
     public ConfigService(List<ConfigurationProvider> configurationProviders, Authorizer authorizer, long maximumCacheSize, long cacheTtlMillis) {
         this.authorizer = authorizer;
         this.objectMapper = new ObjectMapper();
@@ -148,7 +151,7 @@ public class ConfigService {
     }
 
     @GET
-    @Path("/contentTypes")
+    @Path("/config/contentTypes")
     @Produces(MediaType.APPLICATION_JSON)
     public Response getContentTypes(@Context HttpServletRequest request, @Context UriInfo uriInfo) {
         try {
@@ -175,6 +178,7 @@ public class ConfigService {
     }
 
     @GET
+    @Path("/config")
     public Response getConfig(@Context HttpServletRequest request, @Context HttpHeaders httpHeaders, @Context UriInfo uriInfo) {
         try {
             authorizer.authorize(SecurityContextHolder.getContext().getAuthentication(), uriInfo);
@@ -240,7 +244,7 @@ public class ConfigService {
         } catch (ConfigurationProviderException e) {
             logger.warn("Unable to get configuration.", e);
             return Response.status(500).build();
-        } catch (ExecutionException|UncheckedExecutionException e) {
+        } catch (ExecutionException | UncheckedExecutionException e) {
             Throwable cause = e.getCause();
             if (cause instanceof WebApplicationException) {
                 throw (WebApplicationException) cause;
@@ -248,6 +252,85 @@ public class ConfigService {
             logger.error(HttpRequestUtil.getClientString(request) + " made request with " + HttpRequestUtil.getQueryString(request) + " that caused error.", cause);
             return Response.status(500).entity("Internal error").build();
         }
+    }
+
+    /*
+    Protocol Adapter Endpoints
+     */
+    @POST
+    @Path("/api/c2-protocol/heartbeat")
+    @Produces(MediaType.APPLICATION_JSON)
+    public Response heartbeat(@Context HttpServletRequest request, @Context UriInfo uriInfo) throws IOException {
+        try {
+            authorizer.authorize(SecurityContextHolder.getContext().getAuthentication(), uriInfo);
+        } catch (AuthorizationException e) {
+            logger.warn(HttpRequestUtil.getClientString(request) + " not authorized to access " + uriInfo, e);
+            return Response.status(403).build();
+        }
+
+        final ObjectMapper objectMapper = new ObjectMapper();
+//        logger.info("Received headers: {}", request.getHeaderNames().toString());
+        final JsonNode heartbeatJson = objectMapper.readTree(request.getInputStream());
+        logger.info("received full heartbeat: {}", heartbeatJson.toString());
+        final String agentClass = heartbeatJson.get("agentInfo").get("agentClass").textValue();
+        final String agentFlowId = heartbeatJson.get("flowInfo").get("flowId").textValue();
+
+        logger.info("Agent Class is {} and has flowId of {}", agentClass, agentFlowId);
+
+
+        // Determine if there is an update for the flow
+        final Response.ResponseBuilder responseBuilder = Response.ok().type(MediaType.APPLICATION_JSON_TYPE);
+
+        // Agents accessing this endpoint would be exclusively yml based
+        final List<MediaType> mediaAcceptList = Arrays.asList(new MediaType("text", "yml"));
+        final Map<String, List<String>> parameters = new HashMap<>();
+        // It is possible that certain instances may have a prepopulated id.  For these scenarios we provide a mapping to have it fall in line with the expected format for this provider
+        Integer flowVersion = null;
+        try {
+            flowVersion = Integer.parseInt(agentFlowId);
+            parameters.put("version", Arrays.asList(flowVersion.toString()));
+
+        } catch (NumberFormatException nfe) {
+
+        }
+        parameters.put("class", Arrays.asList(agentClass));
+
+        try {
+            final ConfigurationProviderValue configurationProviderValue = configurationCache.get(new ConfigurationProviderKey(mediaAcceptList, parameters));
+            final Configuration configuration = configurationProviderValue.getConfiguration();
+            if (configuration.exists()) {
+                final String configVersion = configuration.getVersion();
+                logger.info("Found flow with version {}", configVersion);
+            } else {
+                logger.warn("Could not locate a configuration for class {}.", agentClass);
+            }
+
+        } catch (ConfigurationProviderException e) {
+            logger.warn("Could not retrieve flow for ");
+        } catch (ExecutionException e) {
+
+        }
+//        if (agentFlowId.equalsIgnoreCase()) {
+
+//        }
+        responseBuilder.entity("{\"response\":\"heartbeat\"}");
+
+        return responseBuilder.build();
+    }
+
+
+    @POST
+    @Path("/api/c2-protocol/acknowledge")
+    @Produces(MediaType.APPLICATION_JSON)
+    public Response acknowledge(@Context HttpServletRequest request, @Context UriInfo uriInfo) {
+        try {
+            authorizer.authorize(SecurityContextHolder.getContext().getAuthentication(), uriInfo);
+        } catch (AuthorizationException e) {
+            logger.warn(HttpRequestUtil.getClientString(request) + " not authorized to access " + uriInfo, e);
+            return Response.status(403).build();
+        }
+
+        return Response.ok().type(MediaType.APPLICATION_JSON_TYPE).entity("{\"response\":\"acknowledge\"}").build();
     }
 
     // see: http://stackoverflow.com/questions/15429257/how-to-convert-byte-array-to-hexstring-in-java#answer-15429408

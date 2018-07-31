@@ -1,0 +1,1030 @@
+{
+    "operation": "heartbeat",
+    "agentInfo": {
+        "agentManifest": {
+            "buildInfo": {
+                "compiler": "/usr/local/opt/ccache/libexec/c++",
+                "flags": "  -std=c++11 -Wall",
+                "revision": "08bfd59f194070f6ccf75d9a2e291609a9423d90",
+                "timestamp": 1533739332,
+                "version": "0.6.0"
+            },
+            "bundles": [
+                {
+                    "artifact": "minifi-expression-language-extensions",
+                    "group": "org.apache.nifi.minifi",
+                    "version": "0.6.0"
+                },
+                {
+                    "componentManifest": {
+                        "processors": [
+                            {
+                                "propertyDescriptors": {
+                                    "Always Output Response": {
+                                        "description": "Will force a response FlowFile to be generated and routed to the 'Response' relationship regardless of what the server status code received is ",
+                                        "name": "Always Output Response",
+                                        "required": false,
+                                        "validRegex": ""
+                                    },
+                                    "Attributes to Send": {
+                                        "description": "Regular expression that defines which attributes to send as HTTP headers in the request. If not defined, no attributes are sent as headers.",
+                                        "name": "Attributes to Send",
+                                        "required": false,
+                                        "validRegex": ""
+                                    },
+                                    "Connection Timeout": {
+                                        "description": "Max wait time for connection to remote service.",
+                                        "name": "Connection Timeout",
+                                        "required": false,
+                                        "validRegex": ""
+                                    },
+                                    "Content-type": {
+                                        "description": "The Content-Type to specify for when content is being transmitted through a PUT, POST or PATCH. In the case of an empty value after evaluating an expression language expression, Content-Type defaults to",
+                                        "name": "Content-type",
+                                        "required": false,
+                                        "validRegex": ""
+                                    },
+                                    "Disable Peer Verification": {
+                                        "description": "Disables peer verification for the SSL session",
+                                        "name": "Disable Peer Verification",
+                                        "required": false,
+                                        "validRegex": ""
+                                    },
+                                    "HTTP Method": {
+                                        "description": "HTTP request method (GET, POST, PUT, PATCH, DELETE, HEAD, OPTIONS). Arbitrary methods are also supported. Methods other than POST, PUT and PATCH will be sent without a message body.",
+                                        "name": "HTTP Method",
+                                        "required": false,
+                                        "validRegex": ""
+                                    },
+                                    "Include Date Header": {
+                                        "description": "Include an RFC-2616 Date header in the request.",
+                                        "name": "Include Date Header",
+                                        "required": false,
+                                        "validRegex": ""
+                                    },
+                                    "Proxy Host": {
+                                        "description": "The fully qualified hostname or IP address of the proxy server",
+                                        "name": "Proxy Host",
+                                        "required": false,
+                                        "validRegex": ""
+                                    },
+                                    "Proxy Port": {
+                                        "description": "The port of the proxy server",
+                                        "name": "Proxy Port",
+                                        "required": false,
+                                        "validRegex": ""
+                                    },
+                                    "Read Timeout": {
+                                        "description": "Max wait time for response from remote service.",
+                                        "name": "Read Timeout",
+                                        "required": false,
+                                        "validRegex": ""
+                                    },
+                                    "Remote URL": {
+                                        "description": "Remote URL which will be connected to, including scheme, host, port, path.",
+                                        "name": "Remote URL",
+                                        "required": false,
+                                        "validRegex": ""
+                                    },
+                                    "SSL Context Service": {
+                                        "exclusiveOfProperties": {
+                                            "Remote URL": "^http:.*$"
+                                        },
+                                        "description": "The SSL Context Service used to provide client certificate information for TLS/SSL (https) connections.",
+                                        "name": "SSL Context Service",
+                                        "required": false,
+                                        "validRegex": ""
+                                    },
+                                    "Use Chunked Encoding": {
+                                        "description": "When POST'ing, PUT'ing or PATCH'ing content set this property to true in order to not pass the 'Content-length' header and instead send 'Transfer-Encoding' with a value of 'chunked'. This will enable the data transfer mechanism which was introduced in HTTP 1.1 to pass data of unknown lengths in chunks.",
+                                        "name": "Use Chunked Encoding",
+                                        "required": false,
+                                        "validRegex": ""
+                                    },
+                                    "invokehttp-proxy-password": {
+                                        "description": "Password to set when authenticating against proxy",
+                                        "name": "invokehttp-proxy-password",
+                                        "required": false,
+                                        "validRegex": ""
+                                    },
+                                    "invokehttp-proxy-user": {
+                                        "description": "Username to set when authenticating against proxy",
+                                        "name": "invokehttp-proxy-user",
+                                        "required": false,
+                                        "validRegex": ""
+                                    },
+                                    "send-message-body": {
+                                        "description": "If true, sends the HTTP message body on POST/PUT/PATCH requests (default).  If false, suppresses the message body and content-type header for these requests.",
+                                        "name": "send-message-body",
+                                        "required": false,
+                                        "validRegex": ""
+                                    }
+                                },
+                                "supportsDynamicProperties": false,
+                                "type": "org.apache.nifi.minifi.processors.InvokeHTTP"
+                            }
+                        ]
+                    },
+                    "artifact": "minifi-http-curl",
+                    "group": "org.apache.nifi.minifi",
+                    "version": "0.6.0"
+                },
+                {
+                    "componentManifest": {
+                        "processors": [
+                            {
+                                "propertyDescriptors": {
+                                    "Authorized DN Pattern": {
+                                        "description": "A Regular Expression to apply against the Distinguished Name of incoming connections. If the Pattern does not match the DN, the connection will be refused.",
+                                        "name": "Authorized DN Pattern",
+                                        "required": false,
+                                        "validRegex": ""
+                                    },
+                                    "Base Path": {
+                                        "description": "Base path for incoming connections",
+                                        "name": "Base Path",
+                                        "required": false,
+                                        "validRegex": ""
+                                    },
+                                    "HTTP Headers to receive as Attributes (Regex)": {
+                                        "description": "Specifies the Regular Expression that determines the names of HTTP Headers that should be passed along as FlowFile attributes",
+                                        "name": "HTTP Headers to receive as Attributes (Regex)",
+                                        "required": false,
+                                        "validRegex": ""
+                                    },
+                                    "Listening Port": {
+                                        "description": "The Port to listen on for incoming connections",
+                                        "name": "Listening Port",
+                                        "required": false,
+                                        "validRegex": ""
+                                    },
+                                    "SSL Certificate": {
+                                        "description": "File containing PEM-formatted file including TLS/SSL certificate and key",
+                                        "name": "SSL Certificate",
+                                        "required": false,
+                                        "validRegex": ""
+                                    },
+                                    "SSL Certificate Authority": {
+                                        "description": "File containing trusted PEM-formatted certificates",
+                                        "name": "SSL Certificate Authority",
+                                        "required": false,
+                                        "validRegex": ""
+                                    },
+                                    "SSL Minimum Version": {
+                                        "description": "Minimum TLS/SSL version allowed (SSL2, SSL3, TLS1.0, TLS1.1, TLS1.2)",
+                                        "name": "SSL Minimum Version",
+                                        "required": false,
+                                        "validRegex": ""
+                                    },
+                                    "SSL Verify Peer": {
+                                        "description": "Whether or not to verify the client's certificate (yes/no)",
+                                        "name": "SSL Verify Peer",
+                                        "required": false,
+                                        "validRegex": ""
+                                    }
+                                },
+                                "supportsDynamicProperties": false,
+                                "type": "org.apache.nifi.minifi.processors.ListenHTTP"
+                            }
+                        ]
+                    },
+                    "artifact": "minifi-civet-extensions",
+                    "group": "org.apache.nifi.minifi",
+                    "version": "0.6.0"
+                },
+                {
+                    "artifact": "minifi-rocksdb-repos",
+                    "group": "org.apache.nifi.minifi",
+                    "version": "0.6.0"
+                },
+                {
+                    "componentManifest": {
+                        "processors": [
+                            {
+                                "propertyDescriptors": {
+                                    "Max Bin Age": {
+                                        "description": "The maximum age of a Bin that will trigger a Bin to be complete. Expected format is <duration> <time unit>",
+                                        "name": "Max Bin Age",
+                                        "required": false,
+                                        "validRegex": ""
+                                    },
+                                    "Maximum Group Size": {
+                                        "description": "The maximum size for the bundle. If not specified, there is no maximum.",
+                                        "name": "Maximum Group Size",
+                                        "required": false,
+                                        "validRegex": ""
+                                    },
+                                    "Maximum Number of Entries": {
+                                        "description": "The maximum number of files to include in a bundle. If not specified, there is no maximum.",
+                                        "name": "Maximum Number of Entries",
+                                        "required": false,
+                                        "validRegex": ""
+                                    },
+                                    "Maximum number of Bins": {
+                                        "description": "Specifies the maximum number of bins that can be held in memory at any one time",
+                                        "name": "Maximum number of Bins",
+                                        "required": false,
+                                        "validRegex": ""
+                                    },
+                                    "Minimum Group Size": {
+                                        "description": "The minimum size of for the bundle",
+                                        "name": "Minimum Group Size",
+                                        "required": false,
+                                        "validRegex": ""
+                                    },
+                                    "Minimum Number of Entries": {
+                                        "description": "The minimum number of files to include in a bundle",
+                                        "name": "Minimum Number of Entries",
+                                        "required": false,
+                                        "validRegex": ""
+                                    }
+                                },
+                                "supportsDynamicProperties": false,
+                                "type": "org.apache.nifi.minifi.processors.BinFiles"
+                            },
+                            {
+                                "propertyDescriptors": {
+                                    "Compression Format": {
+                                        "description": "The compression format to use.",
+                                        "name": "Compression Format",
+                                        "required": false,
+                                        "validRegex": ""
+                                    },
+                                    "Compression Level": {
+                                        "description": "The compression level to use; this is valid only when using GZIP compression.",
+                                        "name": "Compression Level",
+                                        "required": false,
+                                        "validRegex": ""
+                                    },
+                                    "Mode": {
+                                        "description": "Indicates whether the processor should compress content or decompress content.",
+                                        "name": "Mode",
+                                        "required": false,
+                                        "validRegex": ""
+                                    },
+                                    "Update Filename": {
+                                        "description": "Determines if filename extension need to be updated",
+                                        "name": "Update Filename",
+                                        "required": false,
+                                        "validRegex": ""
+                                    }
+                                },
+                                "supportsDynamicProperties": false,
+                                "type": "org.apache.nifi.minifi.processors.CompressContent"
+                            },
+                            {
+                                "propertyDescriptors": {
+                                    "Path": {
+                                        "description": "The path within the archive to focus (\"/\" to focus the total archive)",
+                                        "name": "Path",
+                                        "required": false,
+                                        "validRegex": ""
+                                    }
+                                },
+                                "supportsDynamicProperties": false,
+                                "type": "org.apache.nifi.minifi.processors.FocusArchiveEntry"
+                            },
+                            {
+                                "propertyDescriptors": {
+                                    "After": {
+                                        "description": "For operations which result in new entries, places the new entry after the entry specified by this property.",
+                                        "name": "After",
+                                        "required": false,
+                                        "validRegex": ""
+                                    },
+                                    "Before": {
+                                        "description": "For operations which result in new entries, places the new entry before the entry specified by this property.",
+                                        "name": "Before",
+                                        "required": false,
+                                        "validRegex": ""
+                                    },
+                                    "Destination": {
+                                        "description": "Destination for operations (touch, move or copy) which result in new entries.",
+                                        "name": "Destination",
+                                        "required": false,
+                                        "validRegex": ""
+                                    },
+                                    "Operation": {
+                                        "description": "Operation to perform on the archive (touch, remove, copy, move).",
+                                        "name": "Operation",
+                                        "required": false,
+                                        "validRegex": ""
+                                    },
+                                    "Target": {
+                                        "description": "An existing entry within the archive to perform the operation on.",
+                                        "name": "Target",
+                                        "required": false,
+                                        "validRegex": ""
+                                    }
+                                },
+                                "supportsDynamicProperties": false,
+                                "type": "org.apache.nifi.minifi.processors.ManipulateArchive"
+                            },
+                            {
+                                "propertyDescriptors": {
+                                    "Correlation Attribute Name": {
+                                        "description": "Correlation Attribute Name",
+                                        "name": "Correlation Attribute Name",
+                                        "required": false,
+                                        "validRegex": ""
+                                    },
+                                    "Delimiter Strategy": {
+                                        "description": "Determines if Header, Footer, and Demarcator should point to files",
+                                        "name": "Delimiter Strategy",
+                                        "required": false,
+                                        "validRegex": ""
+                                    },
+                                    "Demarcator File": {
+                                        "description": "Filename specifying the demarcator to use",
+                                        "name": "Demarcator File",
+                                        "required": false,
+                                        "validRegex": ""
+                                    },
+                                    "Footer File": {
+                                        "description": "Filename specifying the footer to use",
+                                        "name": "Footer File",
+                                        "required": false,
+                                        "validRegex": ""
+                                    },
+                                    "Header File": {
+                                        "description": "Filename specifying the header to use",
+                                        "name": "Header File",
+                                        "required": false,
+                                        "validRegex": ""
+                                    },
+                                    "Keep Path": {
+                                        "description": "If using the Zip or Tar Merge Format, specifies whether or not the FlowFiles' paths should be included in their entry",
+                                        "name": "Keep Path",
+                                        "required": false,
+                                        "validRegex": ""
+                                    },
+                                    "Max Bin Age": {
+                                        "description": "The maximum age of a Bin that will trigger a Bin to be complete. Expected format is <duration> <time unit>",
+                                        "name": "Max Bin Age",
+                                        "required": false,
+                                        "validRegex": ""
+                                    },
+                                    "Maximum Group Size": {
+                                        "description": "The maximum size for the bundle. If not specified, there is no maximum.",
+                                        "name": "Maximum Group Size",
+                                        "required": false,
+                                        "validRegex": ""
+                                    },
+                                    "Maximum Number of Entries": {
+                                        "description": "The maximum number of files to include in a bundle. If not specified, there is no maximum.",
+                                        "name": "Maximum Number of Entries",
+                                        "required": false,
+                                        "validRegex": ""
+                                    },
+                                    "Maximum number of Bins": {
+                                        "description": "Specifies the maximum number of bins that can be held in memory at any one time",
+                                        "name": "Maximum number of Bins",
+                                        "required": false,
+                                        "validRegex": ""
+                                    },
+                                    "Merge Format": {
+                                        "description": "Merge Format",
+                                        "name": "Merge Format",
+                                        "required": false,
+                                        "validRegex": ""
+                                    },
+                                    "Merge Strategy": {
+                                        "description": "Defragment or Bin-Packing Algorithm",
+                                        "name": "Merge Strategy",
+                                        "required": false,
+                                        "validRegex": ""
+                                    },
+                                    "Minimum Group Size": {
+                                        "description": "The minimum size of for the bundle",
+                                        "name": "Minimum Group Size",
+                                        "required": false,
+                                        "validRegex": ""
+                                    },
+                                    "Minimum Number of Entries": {
+                                        "description": "The minimum number of files to include in a bundle",
+                                        "name": "Minimum Number of Entries",
+                                        "required": false,
+                                        "validRegex": ""
+                                    }
+                                },
+                                "supportsDynamicProperties": false,
+                                "type": "org.apache.nifi.minifi.processors.MergeContent"
+                            },
+                            {
+                                "supportsDynamicProperties": false,
+                                "type": "org.apache.nifi.minifi.processors.UnfocusArchiveEntry"
+                            }
+                        ]
+                    },
+                    "artifact": "minifi-archive-extensions",
+                    "group": "org.apache.nifi.minifi",
+                    "version": "0.6.0"
+                },
+                {
+                    "componentManifest": {
+                        "processors": [
+                            {
+                                "propertyDescriptors": {
+                                    "Module Directory": {
+                                        "description": "Comma-separated list of paths to files and/or directories which\n                                                 contain modules required by the script",
+                                        "name": "Module Directory",
+                                        "required": false,
+                                        "validRegex": ""
+                                    },
+                                    "Script Body": {
+                                        "description": "Body of script to execute.\n                                            Only one of Script File or Script Body may be used",
+                                        "name": "Script Body",
+                                        "required": false,
+                                        "validRegex": ""
+                                    },
+                                    "Script Engine": {
+                                        "description": "The engine to execute scripts (python, lua)",
+                                        "name": "Script Engine",
+                                        "required": false,
+                                        "validRegex": ""
+                                    },
+                                    "Script File": {
+                                        "description": "Path to script file to execute.\n                                            Only one of Script File or Script Body may be used",
+                                        "name": "Script File",
+                                        "required": false,
+                                        "validRegex": ""
+                                    }
+                                },
+                                "supportsDynamicProperties": false,
+                                "type": "org.apache.nifi.minifi.processors.ExecuteScript"
+                            }
+                        ]
+                    },
+                    "artifact": "minifi-script-extensions",
+                    "group": "org.apache.nifi.minifi",
+                    "version": "0.6.0"
+                },
+                {
+                    "componentManifest": {
+                        "controllerServices": [
+                            {
+                                "propertyDescriptors": {
+                                    "Battery Capacity Path": {
+                                        "description": "Path to the battery level",
+                                        "name": "Battery Capacity Path",
+                                        "required": false,
+                                        "validRegex": ""
+                                    },
+                                    "Battery Status Path": {
+                                        "description": "Path to the battery status ( Discharging/Battery )",
+                                        "name": "Battery Status Path",
+                                        "required": false,
+                                        "validRegex": ""
+                                    },
+                                    "Low Battery Threshold": {
+                                        "description": "Battery threshold before which we will aggressively reduce",
+                                        "name": "Low Battery Threshold",
+                                        "required": false,
+                                        "validRegex": ""
+                                    },
+                                    "Trigger Threshold": {
+                                        "description": "Battery threshold before which we consider a slow reduction",
+                                        "name": "Trigger Threshold",
+                                        "required": false,
+                                        "validRegex": ""
+                                    },
+                                    "Wait Period": {
+                                        "description": "Decay between checking threshold and determining if a reduction is needed",
+                                        "name": "Wait Period",
+                                        "required": false,
+                                        "validRegex": ""
+                                    }
+                                },
+                                "supportsDynamicProperties": false,
+                                "type": "org.apache.nifi.minifi.controllers.LinuxPowerManagerService"
+                            },
+                            {
+                                "propertyDescriptors": {
+                                    "Default Prioritizer": {
+                                        "description": "Sets this controller service as the default prioritizer for all comms",
+                                        "name": "Default Prioritizer",
+                                        "required": false,
+                                        "validRegex": ""
+                                    },
+                                    "Max Payload": {
+                                        "description": "Maximum payload for these network controllers",
+                                        "name": "Max Payload",
+                                        "required": false,
+                                        "validRegex": ""
+                                    },
+                                    "Max Throughput": {
+                                        "description": "Max throughput for these network controllers",
+                                        "name": "Max Throughput",
+                                        "required": false,
+                                        "validRegex": ""
+                                    },
+                                    "Network Controllers": {
+                                        "description": "Network controllers in order of priority for this prioritizer",
+                                        "name": "Network Controllers",
+                                        "required": false,
+                                        "validRegex": ""
+                                    },
+                                    "Verify Interfaces": {
+                                        "description": "Verify that interfaces are operational",
+                                        "name": "Verify Interfaces",
+                                        "required": false,
+                                        "validRegex": ""
+                                    }
+                                },
+                                "supportsDynamicProperties": false,
+                                "type": "org.apache.nifi.minifi.controllers.NetworkPrioritizerService"
+                            },
+                            {
+                                "propertyDescriptors": {
+                                    "CA Certificate": {
+                                        "description": "CA certificate file",
+                                        "name": "CA Certificate",
+                                        "required": false,
+                                        "validRegex": ""
+                                    },
+                                    "Client Certificate": {
+                                        "description": "Client Certificate",
+                                        "name": "Client Certificate",
+                                        "required": false,
+                                        "validRegex": ""
+                                    },
+                                    "Passphrase": {
+                                        "description": "Client passphrase. Either a file or unencrypted text",
+                                        "name": "Passphrase",
+                                        "required": false,
+                                        "validRegex": ""
+                                    },
+                                    "Private Key": {
+                                        "description": "Private Key file",
+                                        "name": "Private Key",
+                                        "required": false,
+                                        "validRegex": ""
+                                    }
+                                },
+                                "supportsDynamicProperties": false,
+                                "type": "org.apache.nifi.minifi.controllers.SSLContextService"
+                            },
+                            {
+                                "propertyDescriptors": {
+                                    "Allow All Properties": {
+                                        "description": "Allows all properties, which are also not disallowed, to be updated",
+                                        "name": "Allow All Properties",
+                                        "required": false,
+                                        "validRegex": ""
+                                    },
+                                    "Allowed Properties": {
+                                        "description": "Properties for which we will allow updates",
+                                        "name": "Allowed Properties",
+                                        "required": false,
+                                        "validRegex": ""
+                                    },
+                                    "Disallowed Properties": {
+                                        "description": "Properties for which we will not allow updates",
+                                        "name": "Disallowed Properties",
+                                        "required": false,
+                                        "validRegex": ""
+                                    },
+                                    "Persist Updates": {
+                                        "description": "Property that dictates whether updates should persist after a restart",
+                                        "name": "Persist Updates",
+                                        "required": false,
+                                        "validRegex": ""
+                                    }
+                                },
+                                "supportsDynamicProperties": false,
+                                "type": "org.apache.nifi.minifi.controllers.UpdatePolicyControllerService"
+                            }
+                        ],
+                        "processors": [
+                            {
+                                "propertyDescriptors": {
+                                    "Hostname Attribute": {
+                                        "description": "Flowfile attribute to used to record the agent's hostname",
+                                        "name": "Hostname Attribute",
+                                        "required": false,
+                                        "validRegex": ""
+                                    },
+                                    "IP Attribute": {
+                                        "description": "Flowfile attribute to used to record the agent's IP address",
+                                        "name": "IP Attribute",
+                                        "required": false,
+                                        "validRegex": ""
+                                    },
+                                    "Network Interface Name": {
+                                        "description": "Network interface from which to read an IP v4 address",
+                                        "name": "Network Interface Name",
+                                        "required": false,
+                                        "validRegex": ""
+                                    }
+                                },
+                                "supportsDynamicProperties": false,
+                                "type": "org.apache.nifi.minifi.processors.AppendHostInfo"
+                            },
+                            {
+                                "propertyDescriptors": {
+                                    "Batch Duration": {
+                                        "description": "If the process is expected to be long-running and produce textual output, a batch duration can be specified.",
+                                        "name": "Batch Duration",
+                                        "required": false,
+                                        "validRegex": ""
+                                    },
+                                    "Command": {
+                                        "description": "Specifies the command to be executed; if just the name of an executable is provided, it must be in the user's environment PATH.",
+                                        "name": "Command",
+                                        "required": false,
+                                        "validRegex": ""
+                                    },
+                                    "Command Arguments": {
+                                        "description": "The arguments to supply to the executable delimited by white space. White space can be escaped by enclosing it in double-quotes.",
+                                        "name": "Command Arguments",
+                                        "required": false,
+                                        "validRegex": ""
+                                    },
+                                    "Redirect Error Stream": {
+                                        "description": "If true will redirect any error stream output of the process to the output stream.",
+                                        "name": "Redirect Error Stream",
+                                        "required": false,
+                                        "validRegex": ""
+                                    },
+                                    "Working Directory": {
+                                        "description": "The directory to use as the current working directory when executing the command",
+                                        "name": "Working Directory",
+                                        "required": false,
+                                        "validRegex": ""
+                                    }
+                                },
+                                "supportsDynamicProperties": false,
+                                "type": "org.apache.nifi.minifi.processors.ExecuteProcess"
+                            },
+                            {
+                                "propertyDescriptors": {
+                                    "Attribute": {
+                                        "description": "Attribute to set from content",
+                                        "name": "Attribute",
+                                        "required": false,
+                                        "validRegex": ""
+                                    }
+                                },
+                                "supportsDynamicProperties": false,
+                                "type": "org.apache.nifi.minifi.processors.ExtractText"
+                            },
+                            {
+                                "propertyDescriptors": {
+                                    "Batch Size": {
+                                        "description": "The number of FlowFiles to be transferred in each invocation",
+                                        "name": "Batch Size",
+                                        "required": false,
+                                        "validRegex": ""
+                                    },
+                                    "Data Format": {
+                                        "description": "Specifies whether the data should be Text or Binary",
+                                        "name": "Data Format",
+                                        "required": false,
+                                        "validRegex": ""
+                                    },
+                                    "File Size": {
+                                        "description": "The size of the file that will be used",
+                                        "name": "File Size",
+                                        "required": false,
+                                        "validRegex": ""
+                                    },
+                                    "Unique FlowFiles": {
+                                        "description": "If true, each FlowFile that is generated will be unique. If false, a random value will be generated and all FlowFiles",
+                                        "name": "Unique FlowFiles",
+                                        "required": false,
+                                        "validRegex": ""
+                                    }
+                                },
+                                "supportsDynamicProperties": false,
+                                "type": "org.apache.nifi.minifi.processors.GenerateFlowFile"
+                            },
+                            {
+                                "propertyDescriptors": {
+                                    "Batch Size": {
+                                        "description": "The maximum number of files to pull in each iteration",
+                                        "name": "Batch Size",
+                                        "required": false,
+                                        "validRegex": ""
+                                    },
+                                    "File Filter": {
+                                        "description": "Only files whose names match the given regular expression will be picked up",
+                                        "name": "File Filter",
+                                        "required": false,
+                                        "validRegex": ""
+                                    },
+                                    "Ignore Hidden Files": {
+                                        "description": "Indicates whether or not hidden files should be ignored",
+                                        "name": "Ignore Hidden Files",
+                                        "required": false,
+                                        "validRegex": ""
+                                    },
+                                    "Input Directory": {
+                                        "description": "The input directory from which to pull files",
+                                        "name": "Input Directory",
+                                        "required": true,
+                                        "validRegex": ""
+                                    },
+                                    "Keep Source File": {
+                                        "description": "If true, the file is not deleted after it has been copied to the Content Repository",
+                                        "name": "Keep Source File",
+                                        "required": false,
+                                        "validRegex": ""
+                                    },
+                                    "Maximum File Age": {
+                                        "description": "The minimum age that a file must be in order to be pulled; any file younger than this amount of time (according to last modification date) will be ignored",
+                                        "name": "Maximum File Age",
+                                        "required": false,
+                                        "validRegex": ""
+                                    },
+                                    "Maximum File Size": {
+                                        "description": "The maximum size that a file can be in order to be pulled",
+                                        "name": "Maximum File Size",
+                                        "required": false,
+                                        "validRegex": ""
+                                    },
+                                    "Minimum File Age": {
+                                        "description": "The maximum age that a file must be in order to be pulled; any fileolder than this amount of time (according to last modification date) will be ignored",
+                                        "name": "Minimum File Age",
+                                        "required": false,
+                                        "validRegex": ""
+                                    },
+                                    "Minimum File Size": {
+                                        "description": "The minimum size that a file must be in order to be pulled",
+                                        "name": "Minimum File Size",
+                                        "required": false,
+                                        "validRegex": ""
+                                    },
+                                    "Polling Interval": {
+                                        "description": "Indicates how long to wait before performing a directory listing",
+                                        "name": "Polling Interval",
+                                        "required": false,
+                                        "validRegex": ""
+                                    },
+                                    "Recurse Subdirectories": {
+                                        "description": "Indicates whether or not to pull files from subdirectories",
+                                        "name": "Recurse Subdirectories",
+                                        "required": false,
+                                        "validRegex": ""
+                                    }
+                                },
+                                "supportsDynamicProperties": false,
+                                "type": "org.apache.nifi.minifi.processors.GetFile"
+                            },
+                            {
+                                "propertyDescriptors": {
+                                    "SSL Context Service": {
+                                        "description": "SSL Context Service Name",
+                                        "name": "SSL Context Service",
+                                        "required": false,
+                                        "validRegex": ""
+                                    },
+                                    "Stay Connected": {
+                                        "description": "Determines if we keep the same socket despite having no data",
+                                        "name": "Stay Connected",
+                                        "required": false,
+                                        "validRegex": ""
+                                    },
+                                    "concurrent-handler-count": {
+                                        "description": "Number of concurrent handlers for this session",
+                                        "name": "concurrent-handler-count",
+                                        "required": false,
+                                        "validRegex": ""
+                                    },
+                                    "connection-attempt-timeout": {
+                                        "description": "Maximum number of connection attempts before attempting backup hosts, if configured.",
+                                        "name": "connection-attempt-timeout",
+                                        "required": false,
+                                        "validRegex": ""
+                                    },
+                                    "end-of-message-byte": {
+                                        "description": "Byte value which denotes end of message. Must be specified as integer within the valid byte range  (-128 thru 127). For example, '13' = Carriage return and '10' = New line. Default '13'.",
+                                        "name": "end-of-message-byte",
+                                        "required": false,
+                                        "validRegex": ""
+                                    },
+                                    "endpoint-list": {
+                                        "description": "A comma delimited list of the endpoints to connect to. The format should be <server_address>:<port>.",
+                                        "name": "endpoint-list",
+                                        "required": false,
+                                        "validRegex": ""
+                                    },
+                                    "receive-buffer-size": {
+                                        "description": "The size of the buffer to receive data in. Default 16384 (16MB).",
+                                        "name": "receive-buffer-size",
+                                        "required": false,
+                                        "validRegex": ""
+                                    }
+                                },
+                                "supportsDynamicProperties": false,
+                                "type": "org.apache.nifi.minifi.processors.GetTCP"
+                            },
+                            {
+                                "propertyDescriptors": {
+                                    "Max Batch Size": {
+                                        "description": "The maximum number of Syslog events to add to a single FlowFile.",
+                                        "name": "Max Batch Size",
+                                        "required": false,
+                                        "validRegex": ""
+                                    },
+                                    "Max Number of TCP Connections": {
+                                        "description": "The maximum number of concurrent connections to accept Syslog messages in TCP mode.",
+                                        "name": "Max Number of TCP Connections",
+                                        "required": false,
+                                        "validRegex": ""
+                                    },
+                                    "Max Size of Socket Buffer": {
+                                        "description": "The maximum size of the socket buffer that should be used.",
+                                        "name": "Max Size of Socket Buffer",
+                                        "required": false,
+                                        "validRegex": ""
+                                    },
+                                    "Message Delimiter": {
+                                        "description": "Specifies the delimiter to place between Syslog messages when multiple messages are bundled together (see <Max Batch Size> core.Property).",
+                                        "name": "Message Delimiter",
+                                        "required": false,
+                                        "validRegex": ""
+                                    },
+                                    "Parse Messages": {
+                                        "description": "Indicates if the processor should parse the Syslog messages. If set to false, each outgoing FlowFile will only.",
+                                        "name": "Parse Messages",
+                                        "required": false,
+                                        "validRegex": ""
+                                    },
+                                    "Port": {
+                                        "description": "The port for Syslog communication.",
+                                        "name": "Port",
+                                        "required": false,
+                                        "validRegex": ""
+                                    },
+                                    "Protocol": {
+                                        "description": "The protocol for Syslog communication.",
+                                        "name": "Protocol",
+                                        "required": false,
+                                        "validRegex": ""
+                                    },
+                                    "Receive Buffer Size": {
+                                        "description": "The size of each buffer used to receive Syslog messages.",
+                                        "name": "Receive Buffer Size",
+                                        "required": false,
+                                        "validRegex": ""
+                                    }
+                                },
+                                "supportsDynamicProperties": false,
+                                "type": "org.apache.nifi.minifi.processors.ListenSyslog"
+                            },
+                            {
+                                "propertyDescriptors": {
+                                    "Attributes to Ignore": {
+                                        "description": "A comma-separated list of Attributes to ignore. If not specified, no attributes will be ignored.",
+                                        "name": "Attributes to Ignore",
+                                        "required": false,
+                                        "validRegex": ""
+                                    },
+                                    "Attributes to Log": {
+                                        "description": "A comma-separated list of Attributes to Log. If not specified, all attributes will be logged.",
+                                        "name": "Attributes to Log",
+                                        "required": false,
+                                        "validRegex": ""
+                                    },
+                                    "Log Level": {
+                                        "description": "The Log Level to use when logging the Attributes",
+                                        "name": "Log Level",
+                                        "required": false,
+                                        "validRegex": ""
+                                    },
+                                    "Log Payload": {
+                                        "description": "If true, the FlowFile's payload will be logged, in addition to its attributes;otherwise, just the Attributes will be logged.",
+                                        "name": "Log Payload",
+                                        "required": false,
+                                        "validRegex": ""
+                                    },
+                                    "Log prefix": {
+                                        "description": "Log prefix appended to the log lines. It helps to distinguish the output of multiple LogAttribute processors.",
+                                        "name": "Log prefix",
+                                        "required": false,
+                                        "validRegex": ""
+                                    }
+                                },
+                                "supportsDynamicProperties": false,
+                                "type": "org.apache.nifi.minifi.processors.LogAttribute"
+                            },
+                            {
+                                "propertyDescriptors": {
+                                    "Conflict Resolution Strategy": {
+                                        "description": "Indicates what should happen when a file with the same name already exists in the output directory",
+                                        "name": "Conflict Resolution Strategy",
+                                        "required": false,
+                                        "validRegex": ""
+                                    },
+                                    "Create Missing Directories": {
+                                        "dependentProperties": [
+                                            "Directory"
+                                        ],
+                                        "description": "If true, then missing destination directories will be created. If false, flowfiles are penalized and sent to failure.",
+                                        "name": "Create Missing Directories",
+                                        "required": true,
+                                        "validRegex": ""
+                                    },
+                                    "Directory": {
+                                        "description": "The output directory to which to put files",
+                                        "name": "Directory",
+                                        "required": false,
+                                        "validRegex": ""
+                                    },
+                                    "Maximum File Count": {
+                                        "description": "Specifies the maximum number of files that can exist in the output directory",
+                                        "name": "Maximum File Count",
+                                        "required": false,
+                                        "validRegex": ""
+                                    }
+                                },
+                                "supportsDynamicProperties": false,
+                                "type": "org.apache.nifi.minifi.processors.PutFile"
+                            },
+                            {
+                                "supportsDynamicProperties": true,
+                                "type": "org.apache.nifi.minifi.processors.RouteOnAttribute"
+                            },
+                            {
+                                "propertyDescriptors": {
+                                    "File to Tail": {
+                                        "description": "Fully-qualified filename of the file that should be tailed",
+                                        "name": "File to Tail",
+                                        "required": false,
+                                        "validRegex": ""
+                                    },
+                                    "Input Delimiter": {
+                                        "description": "Specifies the character that should be used for delimiting the data being tailedfrom the incoming file.",
+                                        "name": "Input Delimiter",
+                                        "required": false,
+                                        "validRegex": ""
+                                    },
+                                    "State File": {
+                                        "description": "Specifies the file that should be used for storing state about what data has been ingested so that upon restart NiFi can resume from where it left off",
+                                        "name": "State File",
+                                        "required": false,
+                                        "validRegex": ""
+                                    }
+                                },
+                                "supportsDynamicProperties": false,
+                                "type": "org.apache.nifi.minifi.processors.TailFile"
+                            },
+                            {
+                                "supportsDynamicProperties": true,
+                                "type": "org.apache.nifi.minifi.processors.UpdateAttribute"
+                            }
+                        ]
+                    },
+                    "artifact": "minifi-system",
+                    "group": "org.apache.nifi.minifi",
+                    "version": "0.6.0"
+                }
+            ],
+            "agentType": "cpp",
+            "identifier": ""
+        },
+        "status": {
+            "components": {
+                "FlowController": {
+                    "running": true
+                }
+            },
+            "repositories": {
+                "flowfilerepository": {
+                    "size": 0
+                },
+                "provenancerepository": {
+                    "size": 0
+                }
+            },
+            "uptime": 54719
+        },
+        "agentClass": "default",
+        "identifier": "78e7e510-9b24-11e8-b43b-6a0000cb3100"
+    },
+    "deviceInfo": {
+        "networkInfo": {
+            "hostname": "HW12151",
+            "ipAddress": "10.200.31.9"
+        },
+        "systemInfo": {
+            "machinearch": "x86_64",
+            "physicalMem": "17179869184",
+            "vCores": "8"
+        },
+        "identifier": "4583481622802726044"
+    },
+    "flowInfo": {
+        "components": {
+            "FlowController": {
+                "running": true
+            }
+        },
+        "versionedFlowSnapshotURI": {
+            "bucketId": "default",
+            "flowId": "78e7e2c2-9b24-11e8-b43b-6a0000cb3100",
+            "registryUrl": ""
+        },
+        "flowId": "78e7e2c2-9b24-11e8-b43b-6a0000cb3100"
+    }
+}
