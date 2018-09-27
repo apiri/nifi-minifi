@@ -1,15 +1,6 @@
 package org.apache.nifi.minifi.bootstrap.status.reporters;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.hortonworks.minifi.c2.model.AgentInfo;
-import com.hortonworks.minifi.c2.model.AgentManifest;
-import com.hortonworks.minifi.c2.model.AgentStatus;
-import com.hortonworks.minifi.c2.model.C2Heartbeat;
-import com.hortonworks.minifi.c2.model.DeviceInfo;
-import com.hortonworks.minifi.c2.model.FlowInfo;
-import com.hortonworks.minifi.c2.model.FlowStatus;
-import com.hortonworks.minifi.c2.model.extension.ComponentManifest;
 import okhttp3.MediaType;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
@@ -24,7 +15,6 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.util.Date;
 import java.util.Properties;
-import java.util.Random;
 import java.util.concurrent.atomic.AtomicLong;
 
 public class RestHeartbeatReporter extends HeartbeatReporter implements ConfigurableHttpClient {
@@ -83,21 +73,21 @@ public class RestHeartbeatReporter extends HeartbeatReporter implements Configur
         reportRunner = new RestHeartbeatReporter.HeartbeatReporter();
     }
 
-    private class HeartbeatReporter implements Runnable {
+    protected class HeartbeatReporter implements Runnable {
         @Override
         public void run() {
             logger.error("Performing heartbeat at " + new Date());
 
-            C2Heartbeat heartbeat = generateHeartbeat();
-            String heartbeatString = null;
-            try {
-                heartbeatString = objectMapper.writeValueAsString(heartbeat);
-            } catch (JsonProcessingException e) {
-                e.printStackTrace();
-            }
+//            C2Heartbeat heartbeat = generateHeartbeat();
+            String heartbeatString = "{ heartbeat: \"hello\" }";
+//            try {
+//                heartbeatString = objectMapper.writeValueAsString(heartbeat);
+//            } catch (JsonProcessingException e) {
+//                e.printStackTrace();
+//            }
             logger.info("Generated heartbeat {}", heartbeatString);
 
-            final RequestBody requestBody = RequestBody.create(MediaType.parse(javax.ws.rs.core.MediaType.APPLICATION_JSON), heartbeatString);
+            final RequestBody requestBody = RequestBody.create(MediaType.parse("application/json"), heartbeatString);
             final Request.Builder requestBuilder = new Request.Builder()
                     .post(requestBody)
                     .url("http://localhost:10080/minifi-c2-api/c2-protocol/heartbeat");
@@ -109,52 +99,52 @@ public class RestHeartbeatReporter extends HeartbeatReporter implements Configur
         }
     }
 
-    private C2Heartbeat generateHeartbeat() {
-
-        // Populate AgentInfo
-        final AgentInfo agentInfo = new AgentInfo();
-        agentInfo.setAgentClass(this.agentClass);
-        agentInfo.setIdentifier("AGENTINFOIDENTIFIER");
-        final AgentStatus agentStatus = new AgentStatus();
-        agentStatus.setComponents(null);
-        agentStatus.setRepositories(null);
-        agentStatus.setUptime(System.currentTimeMillis() / new Random().nextLong());
-        agentInfo.setStatus(agentStatus);
-        final AgentManifest agentManifest = new AgentManifest();
-        agentManifest.setVersion(null);
-        agentManifest.setIdentifier(null);
-        final ComponentManifest componentManifest = new ComponentManifest();
-        componentManifest.setProcessors(null);
-        componentManifest.setApis(null);
-        componentManifest.setControllerServices(null);
-        componentManifest.setReportingTasks(null);
-        agentManifest.setComponentManifest(componentManifest);
-        agentInfo.setAgentManifest(agentManifest);
-
-        // Populate DeviceInfo
-        final DeviceInfo deviceInfo = new DeviceInfo();
-        deviceInfo.setIdentifier("DEVICEINFOIDENTIFIER");
-        deviceInfo.setNetworkInfo(null);
-        deviceInfo.setSystemInfo(null);
-
-        // Populate FlowInfo
-        final FlowInfo flowInfo = new FlowInfo();
-        flowInfo.setFlowId("flow identifer");
-        FlowStatus flowStatus = new FlowStatus();
-        flowStatus.setComponents(null);
-        flowStatus.setQueues(null);
-        flowInfo.setStatus(flowStatus);
-        flowInfo.setVersionedFlowSnapshotURI(null);
-
-        // Populate heartbeat
-        final C2Heartbeat heartbeat = new C2Heartbeat();
-        heartbeat.setAgentInfo(agentInfo);
-        heartbeat.setDeviceInfo(deviceInfo);
-        heartbeat.setFlowInfo(flowInfo);
-        heartbeat.setCreated(new Date().getTime());
-        heartbeat.setIdentifier("IDENTIFIER");
-
-        return heartbeat;
-    }
+//    private C2Heartbeat generateHeartbeat() {
+//
+//        // Populate AgentInfo
+//        final AgentInfo agentInfo = new AgentInfo();
+//        agentInfo.setAgentClass(this.agentClass);
+//        agentInfo.setIdentifier("AGENTINFOIDENTIFIER");
+//        final AgentStatus agentStatus = new AgentStatus();
+//        agentStatus.setComponents(null);
+//        agentStatus.setRepositories(null);
+//        agentStatus.setUptime(System.currentTimeMillis() / new Random().nextLong());
+//        agentInfo.setStatus(agentStatus);
+//        final AgentManifest agentManifest = new AgentManifest();
+//        agentManifest.setVersion(null);
+//        agentManifest.setIdentifier(null);
+//        final ComponentManifest componentManifest = new ComponentManifest();
+//        componentManifest.setProcessors(null);
+//        componentManifest.setApis(null);
+//        componentManifest.setControllerServices(null);
+//        componentManifest.setReportingTasks(null);
+//        agentManifest.setComponentManifest(componentManifest);
+//        agentInfo.setAgentManifest(agentManifest);
+//
+//        // Populate DeviceInfo
+//        final DeviceInfo deviceInfo = new DeviceInfo();
+//        deviceInfo.setIdentifier("DEVICEINFOIDENTIFIER");
+//        deviceInfo.setNetworkInfo(null);
+//        deviceInfo.setSystemInfo(null);
+//
+//        // Populate FlowInfo
+//        final FlowInfo flowInfo = new FlowInfo();
+//        flowInfo.setFlowId("flow identifer");
+//        FlowStatus flowStatus = new FlowStatus();
+//        flowStatus.setComponents(null);
+//        flowStatus.setQueues(null);
+//        flowInfo.setStatus(flowStatus);
+//        flowInfo.setVersionedFlowSnapshotURI(null);
+//
+//        // Populate heartbeat
+//        final C2Heartbeat heartbeat = new C2Heartbeat();
+//        heartbeat.setAgentInfo(agentInfo);
+//        heartbeat.setDeviceInfo(deviceInfo);
+//        heartbeat.setFlowInfo(flowInfo);
+//        heartbeat.setCreated(new Date().getTime());
+//        heartbeat.setIdentifier("IDENTIFIER");
+//
+//        return heartbeat;
+//    }
 
 }

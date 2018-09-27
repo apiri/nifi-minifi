@@ -68,14 +68,10 @@ public class RestHeartbeatReporterTest {
         Thread.sleep(1000000000);
     }
 
-//    @Test(expected = IllegalStateException.class)
-//    public void testFailedInitDueToNoPeriod(){
-//        Properties properties = new Properties();
-//        properties.setProperty(LOGGING_LEVEL_KEY, LogLevel.INFO.name());
-//        properties.setProperty(QUERY_KEY, MOCK_QUERY);
-//
-//        statusLogger.initialize(properties, queryableStatusAggregator);
-//    }
+    @Test(expected = IllegalStateException.class)
+    public void testFailedInitDueToNoPeriod(){
+restHeartbeatReporter.
+    }
 //
 //    @Test(expected = IllegalStateException.class)
 //    public void testFailedInitDueToNoQuery(){
