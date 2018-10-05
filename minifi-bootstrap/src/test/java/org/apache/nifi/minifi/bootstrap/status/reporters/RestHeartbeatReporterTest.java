@@ -65,7 +65,7 @@ public class RestHeartbeatReporterTest {
         restHeartbeatReporter.initialize(properties, queryableStatusAggregator);
         restHeartbeatReporter.setPeriod(2000);
         restHeartbeatReporter.start();
-        Thread.sleep(1000000000);
+//        Thread.sleep(1000000000);
     }
 
 //    @Test(expected = IllegalStateException.class)
