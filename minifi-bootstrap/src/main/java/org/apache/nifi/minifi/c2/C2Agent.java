@@ -1,6 +1,6 @@
 package org.apache.nifi.minifi.c2;
 
-import org.apache.nifi.minifi.c2.protocol.rest.GarconRestC2Protocol;
+import org.apache.nifi.minifi.c2.protocol.rest.C2ServerC2RestProtocol;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -42,7 +42,7 @@ public class C2Agent extends ScheduledThreadPoolExecutor implements HeartbeatRep
 
     public C2Agent() {
         this(DEFAULT_THREADPOOL_SIZE,
-                new GarconRestC2Protocol("localhost", DEFAULT_GARCON_PORT),
+                new C2ServerC2RestProtocol("localhost", DEFAULT_GARCON_PORT),
                 new C2Serializer() {
                 },
                 new C2Deserializer() {

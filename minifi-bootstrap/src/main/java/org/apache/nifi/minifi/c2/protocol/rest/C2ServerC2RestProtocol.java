@@ -1,8 +1,8 @@
 package org.apache.nifi.minifi.c2.protocol.rest;
 
+import org.apache.nifi.minifi.bootstrap.c2.JerseyMiNiFiC2Client;
+import org.apache.nifi.minifi.bootstrap.c2.MiNiFiC2Client;
 import org.apache.nifi.minifi.c2.C2Payload;
-import org.apache.nifi.minifi.c2.client.MiNiFiC2Client;
-import org.apache.nifi.minifi.c2.client.impl.jersey.JerseyMiNiFiC2Client;
 
 public class C2ServerC2RestProtocol extends RestC2Protocol {
 
