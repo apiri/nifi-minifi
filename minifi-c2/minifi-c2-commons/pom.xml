@@ -30,6 +30,11 @@ limitations under the License.
 
     <dependencies>
         <dependency>
+            <artifactId>c2-protocol-api</artifactId>
+            <groupId>com.hortonworks.c2</groupId>
+            <version>0.1.0-SNAPSHOT</version>
+        </dependency>
+        <dependency>
             <groupId>io.swagger</groupId>
             <artifactId>swagger-annotations</artifactId>
             <version>${io.swagger.version}</version>
