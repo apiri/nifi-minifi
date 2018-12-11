@@ -1,9 +1,11 @@
 package org.apache.nifi.minifi.c2.client.impl.jersey;
 
-import org.apache.nifi.minifi.c2.client.MiNiFiC2Client;
-import org.apache.nifi.minifi.c2.client.MiNiFiC2ClientConfig;
-import org.apache.nifi.minifi.c2.client.MiNiFiC2Exception;
-import org.apache.nifi.minifi.c2.model.AgentClass;
+
+import com.hortonworks.minifi.c2.client.C2Client;
+import com.hortonworks.minifi.c2.client.C2ClientConfig;
+import com.hortonworks.minifi.c2.client.C2Exception;
+import com.hortonworks.minifi.c2.client.impl.jersey.JerseyC2Client;
+import com.hortonworks.minifi.c2.model.AgentClass;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
@@ -14,15 +16,15 @@ import java.util.List;
 
 public class JerseyAgentClassClientIT {
 
-    private MiNiFiC2Client c2Client;
+    private C2Client c2Client;
 
     @Before
     public void setUp() throws Exception {
-        final MiNiFiC2ClientConfig.Builder clientCfgBuilder = new MiNiFiC2ClientConfig.Builder();
+        final C2ClientConfig.Builder clientCfgBuilder = new C2ClientConfig.Builder();
         clientCfgBuilder.baseUrl("http://localhost:10080");
 
-        MiNiFiC2ClientConfig clientConfig = clientCfgBuilder.build();
-        c2Client = new JerseyMiNiFiC2Client.Builder().config(clientConfig).build();
+        C2ClientConfig clientConfig = clientCfgBuilder.build();
+        c2Client = new JerseyC2Client.Builder().config(clientConfig).build();
     }
 
     @After
@@ -30,7 +32,7 @@ public class JerseyAgentClassClientIT {
     }
 
     @Test
-    public void createAgentClass() throws MiNiFiC2Exception, IOException {
+    public void createAgentClass() throws C2Exception, IOException {
 
         AgentClass agentClass = new AgentClass();
         agentClass.setName("Secret Agent Class");
@@ -41,20 +43,20 @@ public class JerseyAgentClassClientIT {
     }
 
     @Test
-    public void getAgentClasses() throws MiNiFiC2Exception, IOException {
+    public void getAgentClasses() throws C2Exception, IOException {
         List<AgentClass> agentClasses = c2Client.getAgentClassClient().getAgentClasses();
         Assert.assertTrue(agentClasses.size() > 0);
     }
 
     @Test
-    public void getAgentClass() throws MiNiFiC2Exception, IOException {
+    public void getAgentClass() throws C2Exception, IOException {
         AgentClass retrievedClass = c2Client.getAgentClassClient().getAgentClass("Secret Agent Class");
         Assert.assertNotNull(retrievedClass);
         Assert.assertEquals("Secret Agent Class", retrievedClass.getName());
     }
 
     @Test
-    public void replaceAgentClass() throws MiNiFiC2Exception, IOException {
+    public void replaceAgentClass() throws C2Exception, IOException {
 
         final String updatedDescription = "This class is super duper secreter.";
 
@@ -69,13 +71,13 @@ public class JerseyAgentClassClientIT {
     }
 
     @Test
-    public void deleteAgentClassExistent() throws MiNiFiC2Exception, IOException {
+    public void deleteAgentClassExistent() throws C2Exception, IOException {
         final AgentClass validClassDeletion = c2Client.getAgentClassClient().deleteAgentClass("Secret Agent Class");
         Assert.assertNotNull(validClassDeletion);
     }
 
-    @Test(expected = MiNiFiC2Exception.class)
-    public void deleteAgentClassNonexistent() throws MiNiFiC2Exception, IOException {
+    @Test(expected = C2Exception.class)
+    public void deleteAgentClassNonexistent() throws C2Exception, IOException {
         final AgentClass nonExistentClassDeletion = c2Client.getAgentClassClient().deleteAgentClass("No Such Class");
         Assert.fail("Delete action should not have successfully occurred.");
     }

@@ -103,6 +103,19 @@ limitations under the License.
         </dependency>
 
         <dependency>
+            <groupId>com.hortonworks.c2</groupId>
+            <artifactId>c2-web-client</artifactId>
+            <version>0.1.0-SNAPSHOT</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.hortonworks.c2</groupId>
+            <artifactId>c2-protocol-api</artifactId>
+            <version>0.1.0-SNAPSHOT</version>
+        </dependency>
+
+
+        <dependency>
             <groupId>javax.ws.rs</groupId>
             <artifactId>javax.ws.rs-api</artifactId>
             <version>RELEASE</version>

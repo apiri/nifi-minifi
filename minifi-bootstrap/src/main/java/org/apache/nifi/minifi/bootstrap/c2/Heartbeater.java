@@ -1,8 +1,9 @@
 package org.apache.nifi.minifi.bootstrap.c2;
 
-import org.apache.nifi.minifi.c2.client.C2ProtocolClient;
-import org.apache.nifi.minifi.c2.client.MiNiFiC2Client;
-import org.apache.nifi.minifi.c2.client.impl.jersey.JerseyMiNiFiC2Client;
+import com.hortonworks.minifi.c2.client.C2Client;
+import com.hortonworks.minifi.c2.client.ProtocolClient;
+import com.hortonworks.minifi.c2.client.impl.jersey.JerseyC2Client;
+
 
 public class Heartbeater implements Runnable {
 
@@ -13,16 +14,13 @@ public class Heartbeater implements Runnable {
 
     }
 
-
     @Override
     public void run() {
-        C2ProtocolClient c2ProtocolClient = getC2Client().getC2ProtocolClient();
-
+        ProtocolClient c2ProtocolClient = getC2Client().getProtocolClient();
     }
 
-    protected MiNiFiC2Client getC2Client() {
-        final MiNiFiC2Client c2Client = new JerseyMiNiFiC2Client.Builder().build();
-
+    protected C2Client getC2Client() {
+        final C2Client c2Client = new JerseyC2Client.Builder().build();
         return c2Client;
     }
 }
