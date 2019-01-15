@@ -18,6 +18,7 @@
 package org.apache.nifi.minifi.bootstrap.status.reporters;
 
 import org.apache.nifi.logging.LogLevel;
+import org.apache.nifi.minifi.bootstrap.BootstrapProperties;
 import org.apache.nifi.minifi.bootstrap.QueryableStatusAggregator;
 import org.apache.nifi.minifi.commons.status.FlowStatusReport;
 import org.junit.Before;
@@ -61,6 +62,7 @@ public class RestHeartbeatReporterTest {
         properties.setProperty(REPORT_PERIOD_KEY, "100");
         properties.setProperty(LOGGING_LEVEL_KEY, LogLevel.FATAL.name());
         properties.setProperty(QUERY_KEY, MOCK_QUERY);
+        properties.setProperty(BootstrapProperties.ENABLE_C2, Boolean.toString(true));
 
         restHeartbeatReporter.initialize(properties, queryableStatusAggregator);
         restHeartbeatReporter.setPeriod(2000);

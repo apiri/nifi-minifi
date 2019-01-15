@@ -37,13 +37,12 @@ public class RestHeartbeatReporter extends HeartbeatReporter implements Configur
     private ObjectMapper objectMapper;
     private final AtomicLong pollingPeriodMS = new AtomicLong();
 
-
     @Override
     public void initialize(Properties properties, QueryableStatusAggregator queryableStatusAggregator) {
         final BootstrapProperties bootstrapProperties = new BootstrapProperties(properties);
         objectMapper = new ObjectMapper();
 
-        if (bootstrapProperties.isC2Enabled()) {
+        if (!bootstrapProperties.isC2Enabled()) {
             throw new IllegalArgumentException("Cannot initialize the REST HeartbeatReporter when C2 is not enabled");
         }
 
@@ -54,6 +53,7 @@ public class RestHeartbeatReporter extends HeartbeatReporter implements Configur
         if (pollingPeriodMS.get() < 1) {
             throw new IllegalArgumentException("Property, " + BootstrapProperties.C2_AGENT_HEARTBEAT_PERIOD + ", for the polling period ms must be set with a positive integer.");
         }
+        this.setPeriod((int) pollingPeriodMS.get());
 
 
         if (StringUtils.isBlank(c2ServerUrl)) {

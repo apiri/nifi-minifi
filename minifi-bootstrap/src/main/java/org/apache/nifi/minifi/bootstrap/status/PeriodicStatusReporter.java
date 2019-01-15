@@ -42,13 +42,20 @@ public abstract class PeriodicStatusReporter {
     /**
      * Begins the associated reporting service provided by the given implementation.  In most implementations, no action will occur until this method is invoked. The implementing class must have set
      * 'reportRunner' prior to this method being called.
-     *
      */
     public void start() {
-        if (reportRunner == null){
+        System.out.println("Report runner null? = " + this.reportRunner == null);
+        if (reportRunner == null) {
+            System.out.println("Report runner was null");
             throw new IllegalStateException("Programmatic error, the reportRunner is still NULL when 'start' was called.");
         }
-        scheduledExecutorService.scheduleAtFixedRate(reportRunner, 0, period, TimeUnit.MILLISECONDS);
+        System.out.println("Starting executor service");
+        try {
+            scheduledExecutorService.scheduleAtFixedRate(reportRunner, 0, 10000, TimeUnit.MILLISECONDS);
+        } catch (Exception e) {
+            System.err.println("Could not start service");
+            e.printStackTrace();
+        }
     }
 
     /**
