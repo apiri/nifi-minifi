@@ -42,19 +42,6 @@ Provenance Repository:
 Component Status Repository:
   buffer size: 1440
   snapshot frequency: 1 min
-Security Properties:
-  keystore: /tmp/ssl/localhost-ks.jks
-  keystore type: JKS
-  keystore password: localtest
-  key password: localtest
-  truststore: /tmp/ssl/localhost-ts.jks
-  truststore type: JKS
-  truststore password: localtest
-  ssl protocol: TLS
-  Sensitive Props:
-    key: ''
-    algorithm: PBEWITHMD5AND256BITAES-CBC-OPENSSL
-    provider: BC
 Processors:
 - id: 94b8e610-b4ed-3ec9-b26f-c839931bf3e2
   name: TailFile
