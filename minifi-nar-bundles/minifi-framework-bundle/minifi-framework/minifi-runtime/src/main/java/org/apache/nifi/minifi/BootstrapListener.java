@@ -34,17 +34,22 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.SocketTimeoutException;
 import java.nio.charset.StandardCharsets;
+import java.security.cert.Extension;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
+import org.apache.nifi.bundle.BundleCoordinate;
 import org.apache.nifi.minifi.commons.status.FlowStatusReport;
 import org.apache.nifi.minifi.status.StatusRequestException;
+import org.apache.nifi.nar.ExtensionManager;
+import org.apache.nifi.processor.Processor;
 import org.apache.nifi.util.LimitingInputStream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -216,6 +221,10 @@ public class BootstrapListener {
                                         String flowStatusRequestString = request.getArgs()[0];
                                         writeStatusReport(flowStatusRequestString, socket.getOutputStream());
                                         break;
+                                    case COMPONENT_MANIFEST:
+                                        logger.info("Received COMPONENT_MANIFEST request from Bootstrap");
+                                        generateManifest(socket.getOutputStream());
+                                        break;
                                 }
                             } catch (final Throwable t) {
                                 logger.error("Failed to process request from Bootstrap due to " + t.toString(), t);
@@ -233,6 +242,13 @@ public class BootstrapListener {
                 }
             }
         }
+    }
+
+    private void generateManifest(final OutputStream out) throws IOException {
+        final ObjectOutputStream oos = new ObjectOutputStream(out);
+        Set<BundleCoordinate> bundles = ExtensionManager.getBundles();
+        oos.writeObject(bundles);
+        oos.close();
     }
 
     private void writeStatusReport(String flowStatusRequestString, final OutputStream out) throws IOException, StatusRequestException {
@@ -406,7 +422,8 @@ public class BootstrapListener {
             SHUTDOWN,
             DUMP,
             PING,
-            FLOW_STATUS_REPORT;
+            FLOW_STATUS_REPORT,
+            COMPONENT_MANIFEST;
         }
 
         private final RequestType requestType;

@@ -472,6 +472,10 @@ public class ExtensionManager {
         return bundleCoordinateBundleLookup.get(bundleCoordinate);
     }
 
+    public static Set<BundleCoordinate> getBundles() {
+        return bundleCoordinateBundleLookup.keySet();
+    }
+
     /**
      * Retrieves the bundle for the given class loader.
      *

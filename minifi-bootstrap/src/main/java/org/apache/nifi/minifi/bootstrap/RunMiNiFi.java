@@ -18,6 +18,7 @@ package org.apache.nifi.minifi.bootstrap;
 
 import org.apache.commons.io.input.TeeInputStream;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.nifi.bundle.Bundle;
 import org.apache.nifi.minifi.c2.C2HeartBeatService;
 import org.apache.nifi.minifi.bootstrap.configuration.ConfigurationChangeCoordinator;
 import org.apache.nifi.minifi.bootstrap.configuration.ConfigurationChangeException;
@@ -96,7 +97,7 @@ import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
  * <p>
  * If the {@code bootstrap.conf} file cannot be found, throws a {@code FileNotFoundException}.
  */
-public class RunMiNiFi implements QueryableStatusAggregator, ConfigurationFileHolder {
+public class hahRunMiNiFi implements QueryableStatusAggregator, ConfigurationFileHolder {
 
     public static final String DEFAULT_CONFIG_FILE = "./conf/bootstrap.conf";
     public static final String DEFAULT_NIFI_PROPS_FILE = "./conf/nifi.properties";
@@ -127,6 +128,7 @@ public class RunMiNiFi implements QueryableStatusAggregator, ConfigurationFileHo
     public static final String PING_CMD = "PING";
     public static final String DUMP_CMD = "DUMP";
     public static final String FLOW_STATUS_REPORT_CMD = "FLOW_STATUS_REPORT";
+    public static final String COMPONENT_MANIFEST_CMD = "COMPONENT_MANIFEST";
 
     public static final String NOTIFIER_PROPERTY_PREFIX = "nifi.minifi.notifier";
     public static final String NOTIFIER_COMPONENTS_KEY = NOTIFIER_PROPERTY_PREFIX + ".components";
@@ -1327,6 +1329,33 @@ public class RunMiNiFi implements QueryableStatusAggregator, ConfigurationFileHo
             shutdownPeriodicStatusReporters();
         }
     }
+
+    public Set<Bundle> getLoadedBundles(final int port, final String secretKey, final Logger logger ) throws IOException {
+        logger.warn("Pinging {}", port);
+
+        try (final Socket socket = new Socket("localhost", port)) {
+            final OutputStream out = socket.getOutputStream();
+            final String commandWithArgs = COMPONENT_MANIFEST_CMD + " " + secretKey + " \n";
+            out.write((commandWithArgs).getBytes(StandardCharsets.UTF_8));
+            logger.debug("Sending command to MiNiFi: {}", commandWithArgs);
+            out.flush();
+
+            logger.warn("Sent COMPONENT_MANIFEST_CMD to MiNiFi");
+            socket.setSoTimeout(5000);
+            final InputStream in = socket.getInputStream();
+
+            ObjectInputStream ois = new ObjectInputStream(in);
+            logger.debug("COMPONENT_MANIFEST_CMD response received");
+            Object o = ois.readObject();
+            ois.close();
+            out.close();
+                return (Set<Bundle>)o;
+        } catch (EOFException | ClassNotFoundException | SocketTimeoutException e) {
+            throw new IllegalStateException("Failed to get the component manifest from the MiNiFi process. Potentially due to the process currently being down (restarting or otherwise).", e);
+        }
+    }
+
+
 
     public FlowStatusReport getFlowStatusReport(String statusRequest, final int port, final String secretKey, final Logger logger) throws IOException {
         logger.debug("Pinging {}", port);
