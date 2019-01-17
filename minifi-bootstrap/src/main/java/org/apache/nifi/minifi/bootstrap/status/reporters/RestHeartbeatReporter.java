@@ -157,4 +157,10 @@ public class RestHeartbeatReporter extends HeartbeatReporter implements Configur
         return heartbeat;
     }
 
+    public static void main(String[] args) {
+        RestHeartbeatReporter reporter = new RestHeartbeatReporter();
+        reporter.setPeriod(1000);
+        reporter.start();
+    }
+
 }
