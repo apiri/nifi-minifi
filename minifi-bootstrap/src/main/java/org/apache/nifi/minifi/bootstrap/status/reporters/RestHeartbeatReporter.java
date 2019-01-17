@@ -100,7 +100,7 @@ public class RestHeartbeatReporter extends HeartbeatReporter implements Configur
             final RequestBody requestBody = RequestBody.create(MediaType.parse(javax.ws.rs.core.MediaType.APPLICATION_JSON), heartbeatString);
             final Request.Builder requestBuilder = new Request.Builder()
                     .post(requestBody)
-                    .url("http://localhost:10080/minifi-c2-api/c2-protocol/heartbeat");
+                    .url("http://localhost:10080/c2/api/c2-protocol/heartbeat");
             try {
                 httpClientReference.get().newCall(requestBuilder.build()).execute();
             } catch (IOException e) {
@@ -113,7 +113,10 @@ public class RestHeartbeatReporter extends HeartbeatReporter implements Configur
 
         // Populate AgentInfo
         final AgentInfo agentInfo = new AgentInfo();
-        agentInfo.setAgentClass(this.agentClass);
+//        agentInfo.setAgentClass(this.agentClass);
+//        if (this.agentClass == null) {
+            agentInfo.setAgentClass("devclass");
+//        }
         agentInfo.setIdentifier("AGENTINFOIDENTIFIER");
         final AgentStatus agentStatus = new AgentStatus();
         agentStatus.setComponents(null);
@@ -121,7 +124,7 @@ public class RestHeartbeatReporter extends HeartbeatReporter implements Configur
         agentStatus.setUptime(System.currentTimeMillis() / new Random().nextLong());
         agentInfo.setStatus(agentStatus);
         final AgentManifest agentManifest = new AgentManifest();
-        agentManifest.setVersion(null);
+        agentManifest.setVersion("1");
         agentManifest.setIdentifier(null);
         final ComponentManifest componentManifest = new ComponentManifest();
         componentManifest.setProcessors(null);
