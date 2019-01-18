@@ -51,7 +51,7 @@ public abstract class PeriodicStatusReporter {
         }
         System.out.println("Starting executor service");
         try {
-            scheduledExecutorService.scheduleAtFixedRate(reportRunner, 0, 10000, TimeUnit.MILLISECONDS);
+            scheduledExecutorService.scheduleAtFixedRate(reportRunner, 10000, 1000, TimeUnit.MILLISECONDS);
         } catch (Exception e) {
             System.err.println("Could not start service");
             e.printStackTrace();

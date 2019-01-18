@@ -26,5 +26,5 @@ import java.util.Set;
 public interface QueryableStatusAggregator {
 
     FlowStatusReport statusReport(String statusRequest) throws IOException;
-    Set<Bundle> getBundles() throws IOException;
+    String getBundles() throws IOException;
 }

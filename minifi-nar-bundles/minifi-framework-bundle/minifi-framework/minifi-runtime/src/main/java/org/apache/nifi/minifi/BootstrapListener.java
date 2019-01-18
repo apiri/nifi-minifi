@@ -39,12 +39,14 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.nifi.bundle.BundleCoordinate;
 import org.apache.nifi.minifi.commons.status.FlowStatusReport;
 import org.apache.nifi.minifi.status.StatusRequestException;
@@ -246,8 +248,8 @@ public class BootstrapListener {
 
     private void generateManifest(final OutputStream out) throws IOException {
         final ObjectOutputStream oos = new ObjectOutputStream(out);
-        Set<BundleCoordinate> bundles = ExtensionManager.getBundles();
-        oos.writeObject(bundles);
+        ObjectMapper jacksonObjectMapper = new ObjectMapper();
+        oos.writeObject(jacksonObjectMapper.writeValueAsString(ExtensionManager.getBundles()));
         oos.close();
     }
 

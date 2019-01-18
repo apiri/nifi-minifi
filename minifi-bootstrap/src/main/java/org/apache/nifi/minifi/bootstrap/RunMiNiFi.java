@@ -1332,14 +1332,14 @@ public class RunMiNiFi implements QueryableStatusAggregator, ConfigurationFileHo
         }
     }
     @Override
-    public Set<Bundle> getBundles() throws IOException {
+    public String getBundles() throws IOException {
         final Logger logger = cmdLogger;
         final Status status = getStatus(logger);
         final Properties props = loadProperties(logger);
         return this.getLoadedBundles(status.getPort(), props.getProperty("secret.key"), logger);
-
     }
-    public Set<Bundle> getLoadedBundles(final int port, final String secretKey, final Logger logger ) throws IOException {
+
+    public String getLoadedBundles(final int port, final String secretKey, final Logger logger ) throws IOException {
         logger.warn("Pinging {}", port);
 
         try (final Socket socket = new Socket("localhost", port)) {
@@ -1358,7 +1358,7 @@ public class RunMiNiFi implements QueryableStatusAggregator, ConfigurationFileHo
             Object o = ois.readObject();
             ois.close();
             out.close();
-                return (Set<Bundle>)o;
+            return (String)o;
         } catch (EOFException | ClassNotFoundException | SocketTimeoutException e) {
             throw new IllegalStateException("Failed to get the component manifest from the MiNiFi process. Potentially due to the process currently being down (restarting or otherwise).", e);
         }

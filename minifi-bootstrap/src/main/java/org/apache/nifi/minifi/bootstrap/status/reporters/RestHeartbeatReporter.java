@@ -54,7 +54,7 @@ public class RestHeartbeatReporter extends HeartbeatReporter implements Configur
         this.c2ServerUrl = bootstrapProperties.getC2ServerRestUrl();
         this.agentClass = bootstrapProperties.getC2AgentClass();
 
-        pollingPeriodMS.set(10000);
+        pollingPeriodMS.set(1000);
         if (pollingPeriodMS.get() < 1) {
             throw new IllegalArgumentException("Property, " + BootstrapProperties.C2_AGENT_HEARTBEAT_PERIOD + ", for the polling period ms must be set with a positive integer.");
         }
@@ -94,7 +94,7 @@ public class RestHeartbeatReporter extends HeartbeatReporter implements Configur
             logger.error("****************************************************************************************************************************************************");
                         logger.error("Performing heartbeat at " + new Date());
             logger.error("****************************************************************************************************************************************************");
-            
+
             C2Heartbeat heartbeat = generateHeartbeat();
             String heartbeatString = null;
             try {
@@ -142,14 +142,14 @@ public class RestHeartbeatReporter extends HeartbeatReporter implements Configur
         agentInfo.setAgentManifest(agentManifest);
 
 
-        Set<Bundle> bundles = new HashSet<>();
+//        Set<Bundle> bundles = new HashSet<>();
         try {
-            bundles.addAll(agentMonitor.getBundles());
+            logger.error("Bundles are: {}", agentMonitor.getBundles());
         }catch (IOException ioe) {
             logger.error("Could not get all bundles for instance", ioe);
         }
 
-        logger.error("Bundles are: {}", bundles);
+
         // Populate DeviceInfo
         final DeviceInfo deviceInfo = new DeviceInfo();
         deviceInfo.setIdentifier("DEVICEINFOIDENTIFIER");
