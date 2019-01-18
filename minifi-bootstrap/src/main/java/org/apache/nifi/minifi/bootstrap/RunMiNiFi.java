@@ -97,7 +97,7 @@ import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
  * <p>
  * If the {@code bootstrap.conf} file cannot be found, throws a {@code FileNotFoundException}.
  */
-public class hahRunMiNiFi implements QueryableStatusAggregator, ConfigurationFileHolder {
+public class RunMiNiFi implements QueryableStatusAggregator, ConfigurationFileHolder {
 
     public static final String DEFAULT_CONFIG_FILE = "./conf/bootstrap.conf";
     public static final String DEFAULT_NIFI_PROPS_FILE = "./conf/nifi.properties";
@@ -618,6 +618,8 @@ public class hahRunMiNiFi implements QueryableStatusAggregator, ConfigurationFil
 
         return getFlowStatusReport(statusRequest, status.getPort(), props.getProperty("secret.key"), logger);
     }
+
+
 
     public void env() {
         final Logger logger = cmdLogger;
@@ -1329,7 +1331,14 @@ public class hahRunMiNiFi implements QueryableStatusAggregator, ConfigurationFil
             shutdownPeriodicStatusReporters();
         }
     }
+    @Override
+    public Set<Bundle> getBundles() throws IOException {
+        final Logger logger = cmdLogger;
+        final Status status = getStatus(logger);
+        final Properties props = loadProperties(logger);
+        return this.getLoadedBundles(status.getPort(), props.getProperty("secret.key"), logger);
 
+    }
     public Set<Bundle> getLoadedBundles(final int port, final String secretKey, final Logger logger ) throws IOException {
         logger.warn("Pinging {}", port);
 

@@ -15,6 +15,7 @@ import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.RequestBody;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.nifi.bundle.Bundle;
 import org.apache.nifi.minifi.bootstrap.BootstrapProperties;
 import org.apache.nifi.minifi.bootstrap.QueryableStatusAggregator;
 import org.apache.nifi.minifi.bootstrap.configuration.ingestors.ConfigurableHttpClient;
@@ -23,8 +24,10 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.Date;
+import java.util.HashSet;
 import java.util.Properties;
 import java.util.Random;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
 
 public class RestHeartbeatReporter extends HeartbeatReporter implements ConfigurableHttpClient {
@@ -33,6 +36,7 @@ public class RestHeartbeatReporter extends HeartbeatReporter implements Configur
 
     private String c2ServerUrl;
     private String agentClass;
+    private QueryableStatusAggregator agentMonitor;
 
     private ObjectMapper objectMapper;
     private final AtomicLong pollingPeriodMS = new AtomicLong();
@@ -41,6 +45,7 @@ public class RestHeartbeatReporter extends HeartbeatReporter implements Configur
     public void initialize(Properties properties, QueryableStatusAggregator queryableStatusAggregator) {
         final BootstrapProperties bootstrapProperties = new BootstrapProperties(properties);
         objectMapper = new ObjectMapper();
+        this.agentMonitor= queryableStatusAggregator;
 
         if (!bootstrapProperties.isC2Enabled()) {
             throw new IllegalArgumentException("Cannot initialize the REST HeartbeatReporter when C2 is not enabled");
@@ -134,6 +139,15 @@ public class RestHeartbeatReporter extends HeartbeatReporter implements Configur
         agentManifest.setComponentManifest(componentManifest);
         agentInfo.setAgentManifest(agentManifest);
 
+
+        Set<Bundle> bundles = new HashSet<>();
+        try {
+            bundles.addAll(agentMonitor.getBundles());
+        }catch (IOException ioe) {
+            logger.error("Could not get all bundles for instance", ioe);
+        }
+
+        logger.error("Bundles are: {}", bundles);
         // Populate DeviceInfo
         final DeviceInfo deviceInfo = new DeviceInfo();
         deviceInfo.setIdentifier("DEVICEINFOIDENTIFIER");

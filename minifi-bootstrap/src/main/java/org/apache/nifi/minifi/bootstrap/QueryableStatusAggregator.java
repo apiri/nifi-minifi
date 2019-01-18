@@ -17,11 +17,14 @@
 
 package org.apache.nifi.minifi.bootstrap;
 
+import org.apache.nifi.bundle.Bundle;
 import org.apache.nifi.minifi.commons.status.FlowStatusReport;
 
 import java.io.IOException;
+import java.util.Set;
 
 public interface QueryableStatusAggregator {
 
     FlowStatusReport statusReport(String statusRequest) throws IOException;
+    Set<Bundle> getBundles() throws IOException;
 }
