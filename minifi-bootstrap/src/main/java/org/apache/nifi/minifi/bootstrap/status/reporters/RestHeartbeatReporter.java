@@ -91,8 +91,10 @@ public class RestHeartbeatReporter extends HeartbeatReporter implements Configur
     private class HeartbeatReporter implements Runnable {
         @Override
         public void run() {
-            logger.error("Performing heartbeat at " + new Date());
-
+            logger.error("****************************************************************************************************************************************************");
+                        logger.error("Performing heartbeat at " + new Date());
+            logger.error("****************************************************************************************************************************************************");
+            
             C2Heartbeat heartbeat = generateHeartbeat();
             String heartbeatString = null;
             try {
