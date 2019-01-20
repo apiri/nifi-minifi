@@ -20,6 +20,7 @@ import org.apache.nifi.bundle.Bundle;
 import org.apache.nifi.bundle.BundleCoordinate;
 import org.apache.nifi.components.ConfigurableComponent;
 import org.apache.nifi.components.PropertyDescriptor;
+import org.apache.nifi.controller.ControllerService;
 import org.apache.nifi.controller.exception.ProcessorInstantiationException;
 import org.apache.nifi.nar.ExtensionManager;
 import org.apache.nifi.nar.NarClassLoaders;
@@ -270,6 +271,7 @@ public class MiNiFi {
 
     protected void inspectExtensionClass() {
         final Set<Class> processorExtensions = ExtensionManager.getExtensions(Processor.class);
+        final Set<Class> controllerService = ExtensionManager.getExtensions(ControllerService.class);
 
         for (final Class<?> extensionClass : processorExtensions) {
             if (ConfigurableComponent.class.isAssignableFrom(extensionClass)) {
@@ -298,8 +300,6 @@ public class MiNiFi {
                 }
             }
         }
-
-
     }
 
     protected Collection<Processor> getComponents(final String type, final String identifier, final BundleCoordinate bundleCoordinate, final Set<URL> additionalUrls) throws ProcessorInstantiationException {

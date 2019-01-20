@@ -260,11 +260,6 @@ public class BootstrapListener {
                                         logger.info("Received COMPONENT_MANIFEST request from Bootstrap");
                                         minifi.inspectExtensionClass();
                                         logger.info("Finished inspecting extension class.");
-                                        logger.info("Finished inspecting extension class.");
-                                        logger.info("Finished inspecting extension class.");
-                                        logger.info("Finished inspecting extension class.");
-                                        logger.info("Finished inspecting extension class.");
-                                        logger.info("Finished inspecting extension class.");
                                         generateManifest(socket.getOutputStream());
                                         break;
                                 }
@@ -305,15 +300,6 @@ public class BootstrapListener {
         // Determine components for the bundle
         final ComponentManifest bundleManifest = new ComponentManifest();
 
-        logger.error("Getting capability description....");
-        logger.error("Getting capability description....");
-        logger.error("Getting capability description....");
-        logger.error("Getting capability description....");
-        logger.error("Getting capability description....");
-        logger.error("Getting capability description....");
-        logger.error("Getting capability description....");
-        logger.error("Getting capability description....");
-        logger.error("Getting capability description....");
         logger.error("Getting capability description....");
 
         // Determine manifest processors
@@ -384,95 +370,71 @@ public class BootstrapListener {
 
     private void generateManifest(final OutputStream out) throws IOException {
         logger.error("Generating Manifest");
-        logger.error("Generating Manifest");
-        logger.error("Generating Manifest");
-        logger.error("Generating Manifest");
-        logger.error("Generating Manifest");
-        logger.error("Generating Manifest");
-        logger.error("Generating Manifest");
-        logger.error("Generating Manifest");
-        logger.error("Generating Manifest");
-        logger.error("Generating Manifest");
-        logger.error("Generating Manifest");
-        logger.error("Generating Manifest");
-        logger.error("Generating Manifest");
-        logger.error("Generating Manifest");
-        logger.error("Generating Manifest");
-        logger.error("Generating Manifest");
-        logger.error("Generating Manifest");
-        logger.error("Generating Manifest");
-        logger.error("Generating Manifest");
-        logger.error("Generating Manifest");
-        logger.error("Generating Manifest");
-        logger.error("Generating Manifest");
-        logger.error("Generating Manifest");
-        logger.error("Generating Manifest");
-        logger.error("Generating Manifest");
-        logger.error("Generating Manifest");
+
         final ObjectOutputStream oos = new ObjectOutputStream(out);
         ObjectMapper jacksonObjectMapper = new ObjectMapper();
 
-        // Agent Info
-        final AgentInfo agentInfo = new AgentInfo();
+//        // Agent Info
+//        final AgentInfo agentInfo = new AgentInfo();
+//
+//        // Populate AgentInfo
+//        agentInfo.setAgentClass("devclass"); // TODO pull from conf file
+//        agentInfo.setIdentifier("AGENTINFOIDENTIFIER");
+//
+//        final AgentStatus agentStatus = new AgentStatus(); // TODO implement
+//        agentStatus.setComponents(null);
+//        agentStatus.setRepositories(null);
+//        agentStatus.setUptime(System.currentTimeMillis());
+//        agentInfo.setStatus(agentStatus);
+//
+//        final AgentManifest agentManifest = new AgentManifest();
+//        agentManifest.setAgentType("minifi-java");
+//        agentManifest.setVersion("1");
+//        agentManifest.setIdentifier(null);
+////        agentManifest.setBuildInfo();
+////        agentManifest.setBundles(ExtensionManager.getBundles());
+//
+//
+//        for (org.apache.nifi.bundle.Bundle bundle : ExtensionManager.getBundles()) {
+//            convertFromNiFi(bundle);
+//        }
+//
+//        final ComponentManifest componentManifest = new ComponentManifest();
+//        componentManifest.setProcessors(null);
+//        componentManifest.setApis(null);
+//        componentManifest.setControllerServices(null);
+//        componentManifest.setReportingTasks(null);
+//        agentManifest.setComponentManifest(componentManifest);
+//        agentInfo.setAgentManifest(agentManifest);
+//
+//        // Populate DeviceInfo
+//        final DeviceInfo deviceInfo = new DeviceInfo();
+//        deviceInfo.setIdentifier("DEVICEINFOIDENTIFIER");
+//        deviceInfo.setNetworkInfo(null);
+//        deviceInfo.setSystemInfo(null);
+//
+//        // Populate FlowInfo
+//        final FlowInfo flowInfo = new FlowInfo();
+//        flowInfo.setFlowId("flow identifer");
+//        FlowStatus flowStatus = new FlowStatus();
+//        flowStatus.setComponents(null);
+//        flowStatus.setQueues(null);
+//        flowInfo.setStatus(flowStatus);
+//        flowInfo.setVersionedFlowSnapshotURI(null);
+//
+//        // Populate heartbeat
+//        final C2Heartbeat heartbeat = new C2Heartbeat();
+//        heartbeat.setAgentInfo(agentInfo);
+//        heartbeat.setDeviceInfo(deviceInfo);
+//        heartbeat.setFlowInfo(flowInfo);
+//        heartbeat.setCreated(new Date().getTime());
+//        heartbeat.setIdentifier("IDENTIFIER");
+//
+//
+//        ExtensionManager.getExtensions(Processor.class);
+//        ExtensionManager.getExtensions(ControllerService.class);
 
-        // Populate AgentInfo
-        agentInfo.setAgentClass("devclass"); // TODO pull from conf file
-        agentInfo.setIdentifier("AGENTINFOIDENTIFIER");
-
-        final AgentStatus agentStatus = new AgentStatus(); // TODO implement
-        agentStatus.setComponents(null);
-        agentStatus.setRepositories(null);
-        agentStatus.setUptime(System.currentTimeMillis());
-        agentInfo.setStatus(agentStatus);
-
-        final AgentManifest agentManifest = new AgentManifest();
-        agentManifest.setAgentType("minifi-java");
-        agentManifest.setVersion("1");
-        agentManifest.setIdentifier(null);
-//        agentManifest.setBuildInfo();
-//        agentManifest.setBundles(ExtensionManager.getBundles());
-
-
-        for (org.apache.nifi.bundle.Bundle bundle : ExtensionManager.getBundles()) {
-            convertFromNiFi(bundle);
-        }
-
-        final ComponentManifest componentManifest = new ComponentManifest();
-        componentManifest.setProcessors(null);
-        componentManifest.setApis(null);
-        componentManifest.setControllerServices(null);
-        componentManifest.setReportingTasks(null);
-        agentManifest.setComponentManifest(componentManifest);
-        agentInfo.setAgentManifest(agentManifest);
-
-        // Populate DeviceInfo
-        final DeviceInfo deviceInfo = new DeviceInfo();
-        deviceInfo.setIdentifier("DEVICEINFOIDENTIFIER");
-        deviceInfo.setNetworkInfo(null);
-        deviceInfo.setSystemInfo(null);
-
-        // Populate FlowInfo
-        final FlowInfo flowInfo = new FlowInfo();
-        flowInfo.setFlowId("flow identifer");
-        FlowStatus flowStatus = new FlowStatus();
-        flowStatus.setComponents(null);
-        flowStatus.setQueues(null);
-        flowInfo.setStatus(flowStatus);
-        flowInfo.setVersionedFlowSnapshotURI(null);
-
-        // Populate heartbeat
-        final C2Heartbeat heartbeat = new C2Heartbeat();
-        heartbeat.setAgentInfo(agentInfo);
-        heartbeat.setDeviceInfo(deviceInfo);
-        heartbeat.setFlowInfo(flowInfo);
-        heartbeat.setCreated(new Date().getTime());
-        heartbeat.setIdentifier("IDENTIFIER");
-
-
-        ExtensionManager.getExtensions(Processor.class);
-        ExtensionManager.getExtensions(ControllerService.class);
-
-        oos.writeObject(jacksonObjectMapper.writeValueAsString(heartbeat));
+        oos.writeObject(jacksonObjectMapper.writeValueAsString(""));
         oos.close();
     }
 
