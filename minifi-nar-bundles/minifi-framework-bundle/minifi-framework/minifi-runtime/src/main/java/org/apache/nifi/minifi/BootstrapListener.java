@@ -16,8 +16,11 @@
  */
 package org.apache.nifi.minifi;
 
+import java.io.BufferedOutputStream;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -33,26 +36,56 @@ import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.SocketTimeoutException;
+import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.security.cert.Extension;
+import java.text.Collator;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.Date;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Random;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.hortonworks.minifi.c2.model.AgentInfo;
+import com.hortonworks.minifi.c2.model.AgentManifest;
+import com.hortonworks.minifi.c2.model.AgentStatus;
+import com.hortonworks.minifi.c2.model.C2Heartbeat;
+import com.hortonworks.minifi.c2.model.DeviceInfo;
+import com.hortonworks.minifi.c2.model.FlowInfo;
+import com.hortonworks.minifi.c2.model.FlowStatus;
+import com.hortonworks.minifi.c2.model.extension.Bundle;
+import com.hortonworks.minifi.c2.model.extension.ComponentManifest;
+import com.hortonworks.minifi.c2.model.extension.ProcessorDefinition;
+import com.hortonworks.minifi.c2.model.extension.PropertyDescriptor;
+import org.apache.nifi.annotation.documentation.CapabilityDescription;
 import org.apache.nifi.bundle.BundleCoordinate;
+import org.apache.nifi.components.ConfigurableComponent;
+import org.apache.nifi.controller.ControllerService;
+import org.apache.nifi.controller.LoggableComponent;
+import org.apache.nifi.controller.TerminationAwareLogger;
+import org.apache.nifi.controller.exception.ProcessorInstantiationException;
+import org.apache.nifi.logging.ComponentLog;
+import org.apache.nifi.logging.LogRepositoryFactory;
 import org.apache.nifi.minifi.commons.status.FlowStatusReport;
 import org.apache.nifi.minifi.status.StatusRequestException;
 import org.apache.nifi.nar.ExtensionManager;
 import org.apache.nifi.processor.Processor;
+import org.apache.nifi.processor.ProcessorInitializationContext;
+import org.apache.nifi.processor.SimpleProcessLogger;
+import org.apache.nifi.processor.StandardProcessorInitializationContext;
 import org.apache.nifi.util.LimitingInputStream;
+import org.apache.nifi.web.api.dto.DocumentedTypeDTO;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -225,6 +258,13 @@ public class BootstrapListener {
                                         break;
                                     case COMPONENT_MANIFEST:
                                         logger.info("Received COMPONENT_MANIFEST request from Bootstrap");
+                                        minifi.inspectExtensionClass();
+                                        logger.info("Finished inspecting extension class.");
+                                        logger.info("Finished inspecting extension class.");
+                                        logger.info("Finished inspecting extension class.");
+                                        logger.info("Finished inspecting extension class.");
+                                        logger.info("Finished inspecting extension class.");
+                                        logger.info("Finished inspecting extension class.");
                                         generateManifest(socket.getOutputStream());
                                         break;
                                 }
@@ -246,10 +286,193 @@ public class BootstrapListener {
         }
     }
 
+    /**
+     * Gets the capability description from the specified class.
+     */
+    private String getCapabilityDescription(final Class<?> cls) {
+        final CapabilityDescription capabilityDesc = cls.getAnnotation(CapabilityDescription.class);
+        return capabilityDesc == null ? null : capabilityDesc.value();
+    }
+
+    private Bundle convertFromNiFi(org.apache.nifi.bundle.Bundle nifiBundle) {
+        final Bundle c2Bundle = new Bundle();
+
+        final BundleCoordinate bundleCoordinate = nifiBundle.getBundleDetails().getCoordinate();
+        c2Bundle.setArtifact(bundleCoordinate.getId());
+        c2Bundle.setGroup(bundleCoordinate.getGroup());
+        c2Bundle.setVersion(bundleCoordinate.getVersion());
+
+        // Determine components for the bundle
+        final ComponentManifest bundleManifest = new ComponentManifest();
+
+        logger.error("Getting capability description....");
+        logger.error("Getting capability description....");
+        logger.error("Getting capability description....");
+        logger.error("Getting capability description....");
+        logger.error("Getting capability description....");
+        logger.error("Getting capability description....");
+        logger.error("Getting capability description....");
+        logger.error("Getting capability description....");
+        logger.error("Getting capability description....");
+        logger.error("Getting capability description....");
+
+        // Determine manifest processors
+        List<ProcessorDefinition> bundleProcessors = new ArrayList<>();
+        Set<Class> extensions = ExtensionManager.getExtensions(Processor.class);
+
+        final Map<Class, org.apache.nifi.bundle.Bundle> classBundles = new HashMap<>();
+        for (final Class cls : extensions) {
+            classBundles.put(cls, ExtensionManager.getBundle(cls.getClassLoader()));
+        }
+
+        final List<Class> sortedClasses = new ArrayList<>(classBundles.keySet());
+        Collections.sort(sortedClasses, CLASS_NAME_COMPARATOR);
+
+        for (final Class cls : sortedClasses) {
+
+            final ProcessorDefinition procDef = new ProcessorDefinition();
+
+            final org.apache.nifi.bundle.Bundle bundle = classBundles.get(cls);
+            final BundleCoordinate coordinate = bundle.getBundleDetails().getCoordinate();
+
+
+            procDef.setType(cls.getName());
+            procDef.setTypeDescription(getCapabilityDescription(cls));
+//            procDef.setPropertyDescriptors();
+            logger.warn("Instantiating processor {}", cls.getName());
+            try {
+                Processor processor = instantiateProcessor(cls.getName(), "identifier", bundleCoordinate, Collections.emptySet());
+                for (org.apache.nifi.components.PropertyDescriptor descriptor : processor.getPropertyDescriptors()) {
+                    System.out.println("Got property descriptor " + descriptor.getName());
+                }
+            } catch (Exception e) {
+                logger.error("Could not instantiate processor", e);
+            }
+//dto.setBundle(createBundleDto(coordinate));
+//            dto.setControllerServiceApis(createControllerServiceApiDto(cls));
+//            dto.setDescription(getCapabilityDescription(cls));
+//            dto.setRestricted(isRestricted(cls));
+//            dto.setUsageRestriction(getUsageRestriction(cls));
+//            dto.setExplicitRestrictions(getExplicitRestrictions(cls));
+//            dto.setDeprecationReason(getDeprecationReason(cls));
+//            dto.setTags(getTags(cls));
+//            types.add(dto);
+        }
+
+        for (Class procClass : extensions) {
+            final ProcessorDefinition procDef = new ProcessorDefinition();
+
+
+//            procDef.setPropertyDescriptors();
+//            procDef.setSupportsDynamicRelationships();
+//            procDef.setSupportedRelationships();
+
+//            bundleProcessors.add()
+        }
+
+//        bundleManifest.setProcessors();
+//        bundleManifest.setControllerServices();
+        // bundleManifest.setApis();
+        // bundleManifest.setReportingTasks();  TODO: Currently not supported in DFM
+
+
+        c2Bundle.setComponentManifest(bundleManifest);
+
+        return c2Bundle;
+
+    }
+
     private void generateManifest(final OutputStream out) throws IOException {
+        logger.error("Generating Manifest");
+        logger.error("Generating Manifest");
+        logger.error("Generating Manifest");
+        logger.error("Generating Manifest");
+        logger.error("Generating Manifest");
+        logger.error("Generating Manifest");
+        logger.error("Generating Manifest");
+        logger.error("Generating Manifest");
+        logger.error("Generating Manifest");
+        logger.error("Generating Manifest");
+        logger.error("Generating Manifest");
+        logger.error("Generating Manifest");
+        logger.error("Generating Manifest");
+        logger.error("Generating Manifest");
+        logger.error("Generating Manifest");
+        logger.error("Generating Manifest");
+        logger.error("Generating Manifest");
+        logger.error("Generating Manifest");
+        logger.error("Generating Manifest");
+        logger.error("Generating Manifest");
+        logger.error("Generating Manifest");
+        logger.error("Generating Manifest");
+        logger.error("Generating Manifest");
+        logger.error("Generating Manifest");
+        logger.error("Generating Manifest");
+        logger.error("Generating Manifest");
         final ObjectOutputStream oos = new ObjectOutputStream(out);
         ObjectMapper jacksonObjectMapper = new ObjectMapper();
-        oos.writeObject(jacksonObjectMapper.writeValueAsString(ExtensionManager.getBundles()));
+
+        // Agent Info
+        final AgentInfo agentInfo = new AgentInfo();
+
+        // Populate AgentInfo
+        agentInfo.setAgentClass("devclass"); // TODO pull from conf file
+        agentInfo.setIdentifier("AGENTINFOIDENTIFIER");
+
+        final AgentStatus agentStatus = new AgentStatus(); // TODO implement
+        agentStatus.setComponents(null);
+        agentStatus.setRepositories(null);
+        agentStatus.setUptime(System.currentTimeMillis());
+        agentInfo.setStatus(agentStatus);
+
+        final AgentManifest agentManifest = new AgentManifest();
+        agentManifest.setAgentType("minifi-java");
+        agentManifest.setVersion("1");
+        agentManifest.setIdentifier(null);
+//        agentManifest.setBuildInfo();
+//        agentManifest.setBundles(ExtensionManager.getBundles());
+
+
+        for (org.apache.nifi.bundle.Bundle bundle : ExtensionManager.getBundles()) {
+            convertFromNiFi(bundle);
+        }
+
+        final ComponentManifest componentManifest = new ComponentManifest();
+        componentManifest.setProcessors(null);
+        componentManifest.setApis(null);
+        componentManifest.setControllerServices(null);
+        componentManifest.setReportingTasks(null);
+        agentManifest.setComponentManifest(componentManifest);
+        agentInfo.setAgentManifest(agentManifest);
+
+        // Populate DeviceInfo
+        final DeviceInfo deviceInfo = new DeviceInfo();
+        deviceInfo.setIdentifier("DEVICEINFOIDENTIFIER");
+        deviceInfo.setNetworkInfo(null);
+        deviceInfo.setSystemInfo(null);
+
+        // Populate FlowInfo
+        final FlowInfo flowInfo = new FlowInfo();
+        flowInfo.setFlowId("flow identifer");
+        FlowStatus flowStatus = new FlowStatus();
+        flowStatus.setComponents(null);
+        flowStatus.setQueues(null);
+        flowInfo.setStatus(flowStatus);
+        flowInfo.setVersionedFlowSnapshotURI(null);
+
+        // Populate heartbeat
+        final C2Heartbeat heartbeat = new C2Heartbeat();
+        heartbeat.setAgentInfo(agentInfo);
+        heartbeat.setDeviceInfo(deviceInfo);
+        heartbeat.setFlowInfo(flowInfo);
+        heartbeat.setCreated(new Date().getTime());
+        heartbeat.setIdentifier("IDENTIFIER");
+
+
+        ExtensionManager.getExtensions(Processor.class);
+        ExtensionManager.getExtensions(ControllerService.class);
+
+        oos.writeObject(jacksonObjectMapper.writeValueAsString(heartbeat));
         oos.close();
     }
 
@@ -443,6 +666,82 @@ public class BootstrapListener {
         @SuppressWarnings("unused")
         public String[] getArgs() {
             return args;
+        }
+    }
+
+    private final static Comparator<Class> CLASS_NAME_COMPARATOR = new Comparator<Class>() {
+        @Override
+        public int compare(final Class class1, final Class class2) {
+            return Collator.getInstance(Locale.US).compare(class1.getSimpleName(), class2.getSimpleName());
+        }
+    };
+
+
+    private Processor instantiateProcessor(final String type, final String identifier, final BundleCoordinate bundleCoordinate, final Set<URL> additionalUrls) throws ProcessorInstantiationException {
+
+        Set<Class> processorExtensions = ExtensionManager.getExtensions(Processor.class);
+        for (final Class<?> extensionClass : processorExtensions) {
+            if (ConfigurableComponent.class.isAssignableFrom(extensionClass)) {
+                final String extensionClassName = extensionClass.getCanonicalName();
+
+                final org.apache.nifi.bundle.Bundle bundle = ExtensionManager.getBundle(extensionClass.getClassLoader());
+                if (bundle == null) {
+                    logger.warn("No coordinate found for {}, skipping...", new Object[]{extensionClassName});
+                    continue;
+                }
+                final BundleCoordinate coordinate = bundle.getBundleDetails().getCoordinate();
+
+                final String path = coordinate.getGroup() + "/" + coordinate.getId() + "/" + coordinate.getVersion() + "/" + extensionClassName;
+
+                final Class<? extends ConfigurableComponent> componentClass = extensionClass.asSubclass(ConfigurableComponent.class);
+                try {
+                    logger.error("Documenting: " + componentClass);
+
+
+                    // use temp components from ExtensionManager which should always be populated before doc generation
+                    final String classType = componentClass.getCanonicalName();
+                    logger.error("Getting temp component: {}", classType);
+
+                    final ConfigurableComponent component = ExtensionManager.getTempComponent(classType, bundleCoordinate);
+                    logger.error("found component: {}", component);
+
+                    final List<org.apache.nifi.components.PropertyDescriptor> properties = component.getPropertyDescriptors();
+
+                    for (org.apache.nifi.components.PropertyDescriptor descriptor : properties) {
+                        logger.error("Found descriptor: {} -> {}", descriptor.getName(), descriptor.getDisplayName());
+                    }
+
+
+                } catch (Exception e) {
+                    logger.warn("Unable to document: " + componentClass, e);
+                }
+            }
+        }
+
+        final org.apache.nifi.bundle.Bundle processorBundle = ExtensionManager.getBundle(bundleCoordinate);
+        if (processorBundle == null) {
+            throw new ProcessorInstantiationException("Unable to find bundle for coordinate " + bundleCoordinate.getCoordinate());
+        }
+
+
+        final ClassLoader ctxClassLoader = Thread.currentThread().getContextClassLoader();
+        try {
+            final ClassLoader detectedClassLoaderForInstance = ExtensionManager.createInstanceClassLoader(type, identifier, processorBundle, additionalUrls);
+            logger.error("Detected class laoder for instance={}", detectedClassLoaderForInstance == null);
+            final Class<?> rawClass = Class.forName(type, true, detectedClassLoaderForInstance);
+            logger.error("Raw class {}", rawClass.getName());
+            Thread.currentThread().setContextClassLoader(detectedClassLoaderForInstance);
+
+            final Class<? extends Processor> processorClass = rawClass.asSubclass(Processor.class);
+            logger.error("processorClass class {}", processorClass.getName());
+            final Processor processor = processorClass.newInstance();
+            return processor;
+        } catch (final Throwable t) {
+            throw new ProcessorInstantiationException(type, t);
+        } finally {
+            if (ctxClassLoader != null) {
+                Thread.currentThread().setContextClassLoader(ctxClassLoader);
+            }
         }
     }
 }

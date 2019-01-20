@@ -17,21 +17,32 @@
 package org.apache.nifi.minifi;
 
 import org.apache.nifi.bundle.Bundle;
+import org.apache.nifi.bundle.BundleCoordinate;
+import org.apache.nifi.components.ConfigurableComponent;
+import org.apache.nifi.components.PropertyDescriptor;
+import org.apache.nifi.controller.exception.ProcessorInstantiationException;
 import org.apache.nifi.nar.ExtensionManager;
 import org.apache.nifi.nar.NarClassLoaders;
 import org.apache.nifi.nar.NarUnpacker;
 import org.apache.nifi.nar.SystemBundle;
+import org.apache.nifi.processor.Processor;
 import org.apache.nifi.util.FileUtils;
 import org.apache.nifi.util.NiFiProperties;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.bridge.SLF4JBridgeHandler;
 
+import java.io.BufferedOutputStream;
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.lang.Thread.UncaughtExceptionHandler;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
+import java.net.URL;
+import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.Timer;
@@ -255,5 +266,108 @@ public class MiNiFi {
 
     protected List<Bundle> getBundles(final String bundleClass) {
         return ExtensionManager.getBundles(bundleClass);
+    }
+
+    protected void inspectExtensionClass() {
+        final Set<Class> processorExtensions = ExtensionManager.getExtensions(Processor.class);
+
+        for (final Class<?> extensionClass : processorExtensions) {
+            if (ConfigurableComponent.class.isAssignableFrom(extensionClass)) {
+                final String extensionClassName = extensionClass.getCanonicalName();
+
+                final Bundle bundle = ExtensionManager.getBundle(extensionClass.getClassLoader());
+                if (bundle == null) {
+                    logger.warn("No coordinate found for {}, skipping...", new Object[]{extensionClassName});
+                    continue;
+                }
+                final BundleCoordinate coordinate = bundle.getBundleDetails().getCoordinate();
+
+                final Class<? extends ConfigurableComponent> componentClass = extensionClass.asSubclass(ConfigurableComponent.class);
+                try {
+                    logger.error("Inspecting: " + componentClass);
+                    // use temp components from ExtensionManager which should always be populated before doc generation
+                    final String classType = componentClass.getCanonicalName();
+                    final ConfigurableComponent component = ExtensionManager.getTempComponent(classType, coordinate);
+
+                    for (PropertyDescriptor descriptor : component.getPropertyDescriptors()) {
+                        logger.error("Found property {} -> {}", descriptor.getName(), descriptor.getDisplayName());
+                    }
+
+                } catch (Exception e) {
+                    logger.warn("Inspecting: " + componentClass, e);
+                }
+            }
+        }
+
+
+    }
+
+    protected Collection<Processor> getComponents(final String type, final String identifier, final BundleCoordinate bundleCoordinate, final Set<URL> additionalUrls) throws ProcessorInstantiationException {
+        Set<Class> processorExtensions = ExtensionManager.getExtensions(Processor.class);
+        for (final Class<?> extensionClass : processorExtensions) {
+            if (ConfigurableComponent.class.isAssignableFrom(extensionClass)) {
+                final String extensionClassName = extensionClass.getCanonicalName();
+
+                final org.apache.nifi.bundle.Bundle bundle = ExtensionManager.getBundle(extensionClass.getClassLoader());
+                if (bundle == null) {
+                    logger.warn("No coordinate found for {}, skipping...", new Object[]{extensionClassName});
+                    continue;
+                }
+                final BundleCoordinate coordinate = bundle.getBundleDetails().getCoordinate();
+
+                final String path = coordinate.getGroup() + "/" + coordinate.getId() + "/" + coordinate.getVersion() + "/" + extensionClassName;
+
+                final Class<? extends ConfigurableComponent> componentClass = extensionClass.asSubclass(ConfigurableComponent.class);
+                try {
+                    logger.error("Documenting: " + componentClass);
+
+
+                    // use temp components from ExtensionManager which should always be populated before doc generation
+                    final String classType = componentClass.getCanonicalName();
+                    logger.error("Getting temp component: {}", classType);
+
+                    final ConfigurableComponent component = ExtensionManager.getTempComponent(classType, coordinate);
+                    logger.error("found component: {}", component);
+
+                    final List<org.apache.nifi.components.PropertyDescriptor> properties = component.getPropertyDescriptors();
+
+                    for (org.apache.nifi.components.PropertyDescriptor descriptor : properties) {
+                        logger.error("Found descriptor: {} -> {}", descriptor.getName(), descriptor.getDisplayName());
+                    }
+
+
+                } catch (Exception e) {
+                    logger.warn("Unable to document: " + componentClass, e);
+                }
+            }
+        }
+
+        final org.apache.nifi.bundle.Bundle processorBundle = ExtensionManager.getBundle(bundleCoordinate);
+        if (processorBundle == null) {
+            throw new ProcessorInstantiationException("Unable to find bundle for coordinate " + bundleCoordinate.getCoordinate());
+        }
+
+
+        final ClassLoader ctxClassLoader = Thread.currentThread().getContextClassLoader();
+        try {
+            final ClassLoader detectedClassLoaderForInstance = ExtensionManager.createInstanceClassLoader(type, identifier, processorBundle, additionalUrls);
+            logger.error("Detected class laoder for instance={}", detectedClassLoaderForInstance == null);
+            final Class<?> rawClass = Class.forName(type, true, detectedClassLoaderForInstance);
+            logger.error("Raw class {}", rawClass.getName());
+            Thread.currentThread().setContextClassLoader(detectedClassLoaderForInstance);
+
+            final Class<? extends Processor> processorClass = rawClass.asSubclass(Processor.class);
+            logger.error("processorClass class {}", processorClass.getName());
+            final Processor processor = processorClass.newInstance();
+            Set<Processor> processors = new HashSet<>();
+            processors.add(processor);
+            return processors;
+        } catch (final Throwable t) {
+            throw new ProcessorInstantiationException(type, t);
+        } finally {
+            if (ctxClassLoader != null) {
+                Thread.currentThread().setContextClassLoader(ctxClassLoader);
+            }
+        }
     }
 }

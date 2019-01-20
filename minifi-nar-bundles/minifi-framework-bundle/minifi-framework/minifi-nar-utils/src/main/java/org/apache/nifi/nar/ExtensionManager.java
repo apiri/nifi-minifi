@@ -130,6 +130,7 @@ public class ExtensionManager {
      */
     @SuppressWarnings("unchecked")
     private static void loadExtensions(final Bundle bundle) {
+        logger.error("loading extensions....");
         for (final Map.Entry<Class, Set<Class>> entry : definitionMap.entrySet()) {
             final boolean isControllerService = ControllerService.class.equals(entry.getKey());
             final boolean isProcessor = Processor.class.equals(entry.getKey());
@@ -472,8 +473,10 @@ public class ExtensionManager {
         return bundleCoordinateBundleLookup.get(bundleCoordinate);
     }
 
-    public static Set<BundleCoordinate> getBundles() {
-        return bundleCoordinateBundleLookup.keySet();
+    public static Set<Bundle> getBundles() {
+        Set<Bundle> bundles = new HashSet<>();
+        bundles.addAll(bundleCoordinateBundleLookup.values());
+        return bundles;
     }
 
     /**

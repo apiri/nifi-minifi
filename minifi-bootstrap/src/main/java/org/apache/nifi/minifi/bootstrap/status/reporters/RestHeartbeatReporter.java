@@ -45,7 +45,7 @@ public class RestHeartbeatReporter extends HeartbeatReporter implements Configur
     public void initialize(Properties properties, QueryableStatusAggregator queryableStatusAggregator) {
         final BootstrapProperties bootstrapProperties = new BootstrapProperties(properties);
         objectMapper = new ObjectMapper();
-        this.agentMonitor= queryableStatusAggregator;
+        this.agentMonitor = queryableStatusAggregator;
 
         if (!bootstrapProperties.isC2Enabled()) {
             throw new IllegalArgumentException("Cannot initialize the REST HeartbeatReporter when C2 is not enabled");
@@ -92,7 +92,7 @@ public class RestHeartbeatReporter extends HeartbeatReporter implements Configur
         @Override
         public void run() {
             logger.error("****************************************************************************************************************************************************");
-                        logger.error("Performing heartbeat at " + new Date());
+            logger.error("Performing heartbeat at " + new Date());
             logger.error("****************************************************************************************************************************************************");
 
             C2Heartbeat heartbeat = generateHeartbeat();
@@ -102,7 +102,7 @@ public class RestHeartbeatReporter extends HeartbeatReporter implements Configur
             } catch (JsonProcessingException e) {
                 e.printStackTrace();
             }
-            logger.info("Generated heartbeat {}", heartbeatString);
+//            logger.info("Generated heartbeat {}", heartbeatString);
 
             final RequestBody requestBody = RequestBody.create(MediaType.parse(javax.ws.rs.core.MediaType.APPLICATION_JSON), heartbeatString);
             final Request.Builder requestBuilder = new Request.Builder()
@@ -122,7 +122,7 @@ public class RestHeartbeatReporter extends HeartbeatReporter implements Configur
         final AgentInfo agentInfo = new AgentInfo();
 //        agentInfo.setAgentClass(this.agentClass);
 //        if (this.agentClass == null) {
-            agentInfo.setAgentClass("devclass");
+        agentInfo.setAgentClass("devclass");
 //        }
         agentInfo.setIdentifier("AGENTINFOIDENTIFIER");
         final AgentStatus agentStatus = new AgentStatus();
@@ -142,10 +142,10 @@ public class RestHeartbeatReporter extends HeartbeatReporter implements Configur
         agentInfo.setAgentManifest(agentManifest);
 
 
-//        Set<Bundle> bundles = new HashSet<>();
+        Set<Bundle> bundles = new HashSet<>();
         try {
             logger.error("Bundles are: {}", agentMonitor.getBundles());
-        }catch (IOException ioe) {
+        } catch (IOException ioe) {
             logger.error("Could not get all bundles for instance", ioe);
         }
 
