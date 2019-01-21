@@ -225,9 +225,9 @@ public class BootstrapListener {
                                         writeStatusReport(flowStatusRequestString, socket.getOutputStream());
                                         break;
                                     case COMPONENT_MANIFEST:
-                                        logger.info("Received COMPONENT_MANIFEST request from Bootstrap");
+//                                        logger.trace("Received COMPONENT_MANIFEST request from Bootstrap");
                                         C2Heartbeat c2Heartbeat = minifi.generateHeartbeat();
-                                        logger.info("Finished inspecting extension class.");
+//                                        logger.info("Finished inspecting extension class.");
                                         provideHeartbeat(socket.getOutputStream(), c2Heartbeat);
                                         break;
                                 }
@@ -250,7 +250,7 @@ public class BootstrapListener {
     }
 
     private void provideHeartbeat(final OutputStream out, C2Heartbeat c2Heartbeat) throws IOException {
-        logger.error("Generating payload...");
+        logger.trace("Generating payload...");
         final ObjectOutputStream oos = new ObjectOutputStream(out);
         final ObjectMapper jacksonObjectMapper = new ObjectMapper();
         jacksonObjectMapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);

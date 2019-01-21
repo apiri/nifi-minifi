@@ -27,6 +27,7 @@ import com.hortonworks.minifi.c2.model.FlowInfo;
 import com.hortonworks.minifi.c2.model.FlowStatus;
 import com.hortonworks.minifi.c2.model.FlowUri;
 import com.hortonworks.minifi.c2.model.extension.ComponentManifest;
+import com.hortonworks.minifi.c2.model.extension.ControllerServiceDefinition;
 import com.hortonworks.minifi.c2.model.extension.InputRequirement;
 import com.hortonworks.minifi.c2.model.extension.ProcessorDefinition;
 import com.hortonworks.minifi.c2.model.extension.PropertyAllowableValue;
@@ -52,6 +53,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.bridge.SLF4JBridgeHandler;
 
+import javax.naming.ldap.Control;
 import java.io.File;
 import java.io.IOException;
 import java.lang.Thread.UncaughtExceptionHandler;
@@ -388,9 +390,7 @@ public class MiNiFi {
             convertedBundle.setGroup(bundleCoordinate.getGroup());
             convertedBundle.setVersion(bundleCoordinate.getVersion());
 
-
             convertedBundle.setComponentManifest(getBundleManifest(nifiBundle));
-
             c2Bundles.add(convertedBundle);
         }
 
@@ -421,43 +421,65 @@ public class MiNiFi {
     }
 
     private ComponentManifest getBundleManifest(Bundle nifiBundle) {
-        ComponentManifest bundleComponentManifest = new ComponentManifest();
-        Set<Class> extensions = ExtensionManager.getExtensions(Processor.class);
 
-        final Map<Class, Bundle> classBundles = new HashMap<>();
-        for (final Class cls : extensions) {
-            classBundles.put(cls, ExtensionManager.getBundle(cls.getClassLoader()));
+        final BundleCoordinate bundleCoordinate = nifiBundle.getBundleDetails().getCoordinate();
+
+        final Set<Class> procExtensions = ExtensionManager.getExtensions(Processor.class);
+        final Set<Class> csExtensions = ExtensionManager.getExtensions(ControllerService.class);
+
+        // Determine Processors
+        final List<ProcessorDefinition> processorDefinitions = new ArrayList<>();
+        final List<ControllerServiceDefinition> csDefinitions = new ArrayList<>();
+
+        final Map<Class, Bundle> processorClassBundles = new HashMap<>();
+        for (final Class cls : procExtensions) {
+            processorClassBundles.put(cls, ExtensionManager.getBundle(cls.getClassLoader()));
+        }
+
+        final Map<Class, Bundle> csClassBundles = new HashMap<>();
+        for (final Class cls : csExtensions) {
+            csClassBundles.put(cls, ExtensionManager.getBundle(cls.getClassLoader()));
         }
 
 
-        for (Bundle bundle : classBundles.values()) {
-            BundleCoordinate bundleCoordinate = bundle.getBundleDetails().getCoordinate();
-            // Determine Processors
-            final List<ProcessorDefinition> processorDefinitions = new ArrayList<>();
-
-            Set<Class> procExtensions = ExtensionManager.getExtensions(Processor.class);
-            for (Class cls : ExtensionManager.getExtensions(Processor.class)) {
-                if (!classBundles.get(cls).equals(bundle)) {
-                    continue;
-                }
-                final ProcessorDefinition procDef = new ProcessorDefinition();
-                procDef.setType(cls.getName());
-                procDef.setTypeDescription(getCapabilityDescription(cls));
-                procDef.setPropertyDescriptors(getPropertyDescriptors(cls));
-                procDef.setInputRequirement(InputRequirement.INPUT_ALLOWED);
-                procDef.setSupportedRelationships(getSupportedRelationships(cls));
-                procDef.setSupportsDynamicProperties(false);
-                procDef.setSupportsDynamicRelationships(false);
-                procDef.setArtifact(bundleCoordinate.getId());
-                procDef.setVersion(bundleCoordinate.getVersion());
-                procDef.setGroup(bundleCoordinate.getGroup());
-                processorDefinitions.add(procDef);
+        for (Class cls : procExtensions) {
+            if (!processorClassBundles.get(cls).equals(nifiBundle)) {
+                continue;
             }
-            bundleComponentManifest.setProcessors(processorDefinitions);
+            final ProcessorDefinition procDef = new ProcessorDefinition();
+            procDef.setType(cls.getName());
+            procDef.setTypeDescription(getCapabilityDescription(cls));
+            procDef.setPropertyDescriptors(getPropertyDescriptors(cls));
+            procDef.setInputRequirement(InputRequirement.INPUT_ALLOWED);
+            procDef.setSupportedRelationships(getSupportedRelationships(cls));
+            procDef.setSupportsDynamicProperties(true);
+            procDef.setSupportsDynamicRelationships(true);
+            procDef.setArtifact(bundleCoordinate.getId());
+            procDef.setVersion(bundleCoordinate.getVersion());
+            procDef.setGroup(bundleCoordinate.getGroup());
+            processorDefinitions.add(procDef);
         }
-        // Determine Controller Services
-        // Determine APIs
 
+        // Determine Controller Services
+        for (Class cls : csExtensions) {
+//                logger.error("Looking up bundle for ControllerService class {}", cls);
+            if (!csClassBundles.get(cls).equals(nifiBundle)) {
+                continue;
+            }
+            final ControllerServiceDefinition csDef = new ControllerServiceDefinition();
+            csDef.setType(cls.getName());
+            csDef.setTypeDescription(getCapabilityDescription(cls));
+            csDef.setPropertyDescriptors(getPropertyDescriptors(cls));
+            csDef.setSupportsDynamicProperties(true);
+            csDef.setArtifact(bundleCoordinate.getId());
+            csDef.setVersion(bundleCoordinate.getVersion());
+            csDef.setGroup(bundleCoordinate.getGroup());
+            csDefinitions.add(csDef);
+        }
+
+        ComponentManifest bundleComponentManifest = new ComponentManifest();
+        bundleComponentManifest.setControllerServices(csDefinitions);
+        bundleComponentManifest.setProcessors(processorDefinitions);
 
         return bundleComponentManifest;
     }
@@ -497,6 +519,36 @@ public class MiNiFi {
             }
         }
         return relationships;
+    }
+
+    private String findType(Class extClass) {
+//        logger.error("GENERATING PROPERTY DESCRIPTORS for {}", extClass.getName());
+
+        final List<com.hortonworks.minifi.c2.model.extension.Relationship> relationships = new ArrayList<>();
+
+        if (ConfigurableComponent.class.isAssignableFrom(extClass)) {
+            final String extensionClassName = extClass.getCanonicalName();
+
+            final Bundle bundle = ExtensionManager.getBundle(extClass.getClassLoader());
+            if (bundle == null) {
+                logger.warn("No coordinate found for {}, skipping...", new Object[]{extensionClassName});
+            }
+            final BundleCoordinate coordinate = bundle.getBundleDetails().getCoordinate();
+
+            final Class<? extends ConfigurableComponent> componentClass = extClass.asSubclass(ConfigurableComponent.class);
+            try {
+                // use temp components from ExtensionManager which should always be populated before doc generation
+                final String classType = componentClass.getCanonicalName();
+                final ConfigurableComponent component = ExtensionManager.getTempComponent(classType, coordinate);
+
+                if (component instanceof ControllerService) {
+                    final ControllerService connectable = (ControllerService) component;
+                }
+            } catch (Exception e) {
+                logger.warn("Error generating relationships...: " + componentClass, e);
+            }
+        }
+        return "";
     }
 
 
