@@ -96,35 +96,35 @@ public class RestHeartbeatReporter extends HeartbeatReporter implements Configur
 //            logger.error("Performing heartbeat at " + new Date());
 //            logger.error("****************************************************************************************************************************************************");
 
-            C2Heartbeat heartbeat = generateHeartbeat();
-            String heartbeatString = null;
             try {
-                heartbeatString = objectMapper.writeValueAsString(heartbeat);
-            } catch (JsonProcessingException e) {
-                e.printStackTrace();
-            }
+                String heartbeatString = generateHeartbeat();
+//            try {
+//                heartbeatString = objectMapper.writeValueAsString(heartbeat);
+//            } catch (JsonProcessingException e) {
+//
+//                e.printStackTrace();
+//            }
 //            logger.info("Generated heartbeat {}", heartbeatString);
 
-            final RequestBody requestBody = RequestBody.create(MediaType.parse(javax.ws.rs.core.MediaType.APPLICATION_JSON), heartbeatString);
-            final Request.Builder requestBuilder = new Request.Builder()
-                    .post(requestBody)
-                    .url("http://localhost:10080/c2/api/c2-protocol/heartbeat");
-            try {
-                httpClientReference.get().newCall(requestBuilder.build()).execute();
+                final RequestBody requestBody = RequestBody.create(MediaType.parse(javax.ws.rs.core.MediaType.APPLICATION_JSON), heartbeatString);
+                final Request.Builder requestBuilder = new Request.Builder()
+                        .post(requestBody)
+                        .url("http://localhost:10080/c2/api/c2-protocol/heartbeat");
+                try {
+                    httpClientReference.get().newCall(requestBuilder.build()).execute();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                    logger.error("Could not transmit",e);
+
+                }
             } catch (IOException e) {
-                e.printStackTrace();
+                logger.error("Could not transmit",e);
             }
         }
     }
 
-    private C2Heartbeat generateHeartbeat() {
-        C2Heartbeat heartbeat = new C2Heartbeat();
-        try {
-            this.agentMonitor.getBundles();
-        } catch (Exception e) {
-
-        }
-        return heartbeat;
+    private String generateHeartbeat() throws IOException {
+        return this.agentMonitor.getBundles();
     }
 
     public static void main(String[] args) {

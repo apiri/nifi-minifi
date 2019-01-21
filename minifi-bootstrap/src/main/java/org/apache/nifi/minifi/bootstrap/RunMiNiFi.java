@@ -1340,7 +1340,7 @@ public class RunMiNiFi implements QueryableStatusAggregator, ConfigurationFileHo
     }
 
     public String getLoadedBundles(final int port, final String secretKey, final Logger logger ) throws IOException {
-        logger.trace("Pinging {}", port);
+        logger.trace("Generating heartbeat to {}", port);
 
         try (final Socket socket = new Socket("localhost", port)) {
             final OutputStream out = socket.getOutputStream();

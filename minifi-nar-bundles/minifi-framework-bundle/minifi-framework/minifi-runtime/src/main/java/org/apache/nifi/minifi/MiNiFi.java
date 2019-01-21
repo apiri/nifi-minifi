@@ -20,10 +20,12 @@ import com.google.common.collect.Sets;
 import com.hortonworks.minifi.c2.model.AgentInfo;
 import com.hortonworks.minifi.c2.model.AgentManifest;
 import com.hortonworks.minifi.c2.model.AgentStatus;
+import com.hortonworks.minifi.c2.model.BuildInfo;
 import com.hortonworks.minifi.c2.model.C2Heartbeat;
 import com.hortonworks.minifi.c2.model.DeviceInfo;
 import com.hortonworks.minifi.c2.model.FlowInfo;
 import com.hortonworks.minifi.c2.model.FlowStatus;
+import com.hortonworks.minifi.c2.model.FlowUri;
 import com.hortonworks.minifi.c2.model.extension.ComponentManifest;
 import com.hortonworks.minifi.c2.model.extension.InputRequirement;
 import com.hortonworks.minifi.c2.model.extension.ProcessorDefinition;
@@ -65,6 +67,7 @@ import java.util.Comparator;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -302,6 +305,8 @@ public class MiNiFi {
         final DeviceInfo deviceInfo = generateDeviceInfo();
         final FlowInfo flowInfo = generateFlowInfo();
 
+        heartbeat.setCreated(new Date().getTime());
+        heartbeat.setIdentifier("minifi-java-id");
         // Populate heartbeat
         heartbeat.setAgentInfo(agentInfo);
         heartbeat.setDeviceInfo(deviceInfo);
@@ -319,8 +324,14 @@ public class MiNiFi {
         FlowStatus flowStatus = new FlowStatus();
         flowStatus.setComponents(null);
         flowStatus.setQueues(null);
-        flowInfo.setStatus(flowStatus);
-        flowInfo.setVersionedFlowSnapshotURI(null);
+        flowInfo.setStatus(null);
+        flowInfo.setComponents(null);
+        flowInfo.setQueues(null);
+        FlowUri flowUri = new FlowUri();
+        flowUri.setBucketId("bucket-id");
+        flowUri.setFlowId("flowuri-bucket-id");
+        flowUri.setRegistryUrl("https://localhost:18080/nifi-registry");
+        flowInfo.setVersionedFlowSnapshotURI(flowUri);
         return flowInfo;
     }
 
@@ -352,17 +363,20 @@ public class MiNiFi {
     }
 
     private AgentManifest generateAgentManifest() {
-
-
         final AgentManifest agentManifest = new AgentManifest();
         agentManifest.setAgentType("minifi-java");
         agentManifest.setVersion("1");
-        agentManifest.setIdentifier(null);
-        // agentManifest.setBuildInfo();
-
+        agentManifest.setIdentifier("agent-manifest-id");
+        BuildInfo buildInfo = new BuildInfo();
+        buildInfo.setCompiler("JDK 8");
+        buildInfo.setCompilerFlags("");
+        buildInfo.setRevision("");
+        buildInfo.setTargetArch("x86_64");
+        buildInfo.setTimestamp(new Date().getTime());
+        buildInfo.setVersion("1.8.0 u187");
+         agentManifest.setBuildInfo(buildInfo);
 
         final List<ProcessorDefinition> processorDefinitions = new ArrayList<>();
-
 
         // Determine Bundles
         final List<com.hortonworks.minifi.c2.model.extension.Bundle> c2Bundles = new ArrayList<>();
@@ -380,21 +394,17 @@ public class MiNiFi {
             ComponentManifest bundleComponentManifest = new ComponentManifest();
 
             for (Class cls : ExtensionManager.getExtensions(Processor.class)) {
-
                 procDef.setType(cls.getName());
                 procDef.setTypeDescription(getCapabilityDescription(cls));
-
                 procDef.setPropertyDescriptors(getPropertyDescriptors(cls));
                 procDef.setInputRequirement(InputRequirement.INPUT_ALLOWED);
-//            procDef.setSupportedRelationships(getSupportedRelationships(procExt));
+                procDef.setSupportedRelationships(getSupportedRelationships(cls));
                 procDef.setSupportsDynamicProperties(false);
                 procDef.setSupportsDynamicRelationships(false);
                 procDef.setArtifact(bundleCoordinate.getId());
                 procDef.setVersion(bundleCoordinate.getVersion());
                 procDef.setGroup(bundleCoordinate.getGroup());
                 processorDefinitions.add(procDef);
-
-
             }
             convertedBundle.setComponentManifest(bundleComponentManifest);
 
@@ -413,12 +423,10 @@ public class MiNiFi {
         final List<Class> sortedClasses = new ArrayList<>(classBundles.keySet());
         Collections.sort(sortedClasses, CLASS_NAME_COMPARATOR);
 
-
 //        bundleManifest.setProcessors();
 //        bundleManifest.setControllerServices();
         // bundleManifest.setApis();
         // bundleManifest.setReportingTasks();  TODO: Currently not supported in DFM
-
 
         /** Component Manifest **/
         final ComponentManifest componentManifest = new ComponentManifest();
@@ -436,17 +444,53 @@ public class MiNiFi {
         componentManifest.setReportingTasks(new ArrayList<>());
 
         agentManifest.setBundles(c2Bundles);
-        agentManifest.setComponentManifest(componentManifest);
+//        agentManifest.setComponentManifest(componentManifest);
 
 
         return agentManifest;
     }
 
+    private List<com.hortonworks.minifi.c2.model.extension.Relationship> getSupportedRelationships(Class extClass) {
+//        logger.error("GENERATING PROPERTY DESCRIPTORS for {}", extClass.getName());
 
-    private Map<String, com.hortonworks.minifi.c2.model.extension.PropertyDescriptor> getPropertyDescriptors(Class extClass) {
-        logger.error("GENERATING PROPERTY DESCRIPTORS for {}", extClass.getName());
+        final List<com.hortonworks.minifi.c2.model.extension.Relationship> relationships = new ArrayList<>();
 
-        final Map<String, com.hortonworks.minifi.c2.model.extension.PropertyDescriptor> c2PropDescriptors = new HashedMap<>();
+        if (ConfigurableComponent.class.isAssignableFrom(extClass)) {
+            final String extensionClassName = extClass.getCanonicalName();
+
+            final Bundle bundle = ExtensionManager.getBundle(extClass.getClassLoader());
+            if (bundle == null) {
+                logger.warn("No coordinate found for {}, skipping...", new Object[]{extensionClassName});
+            }
+            final BundleCoordinate coordinate = bundle.getBundleDetails().getCoordinate();
+
+            final Class<? extends ConfigurableComponent> componentClass = extClass.asSubclass(ConfigurableComponent.class);
+            try {
+                // use temp components from ExtensionManager which should always be populated before doc generation
+                final String classType = componentClass.getCanonicalName();
+                final ConfigurableComponent component = ExtensionManager.getTempComponent(classType, coordinate);
+
+                if (component instanceof Processor) {
+//                    logger.error("GETTING RELATIONSHIPS.....");
+                    final Processor connectable = (Processor) component;
+                    for (Relationship rel : connectable.getRelationships()) {
+                        com.hortonworks.minifi.c2.model.extension.Relationship c2Rel = new com.hortonworks.minifi.c2.model.extension.Relationship();
+                        c2Rel.setName(rel.getName());
+                        c2Rel.setDescription(rel.getDescription());
+                        relationships.add(c2Rel);
+                    }
+                }
+            } catch (Exception e) {
+                logger.warn("Error generating relationships...: " + componentClass, e);
+            }
+        }
+        return relationships;
+    }
+
+
+    private LinkedHashMap<String, com.hortonworks.minifi.c2.model.extension.PropertyDescriptor> getPropertyDescriptors(Class extClass) {
+
+        final LinkedHashMap<String, com.hortonworks.minifi.c2.model.extension.PropertyDescriptor> c2PropDescriptors = new LinkedHashMap<>();
 
 
         if (ConfigurableComponent.class.isAssignableFrom(extClass)) {
@@ -460,21 +504,11 @@ public class MiNiFi {
 
             final Class<? extends ConfigurableComponent> componentClass = extClass.asSubclass(ConfigurableComponent.class);
             try {
-                logger.error("Inspecting: " + componentClass);
                 // use temp components from ExtensionManager which should always be populated before doc generation
                 final String classType = componentClass.getCanonicalName();
                 final ConfigurableComponent component = ExtensionManager.getTempComponent(classType, coordinate);
 
-                if (component instanceof  Processor) {
-                    logger.error("GETTING RELATIONSHIPS.....");
-                    final Processor connectable = (Processor) component;
-                    Set<Relationship> relationships = connectable.getRelationships();
-                    logger.warn("Have relationships {} for class {}", relationships, componentClass.getName());
-                }
-
-
                 for (PropertyDescriptor descriptor : component.getPropertyDescriptors()) {
-                    logger.info("Found property {} -> {}", descriptor.getName(), descriptor.getDisplayName());
                     final com.hortonworks.minifi.c2.model.extension.PropertyDescriptor c2Prop = new com.hortonworks.minifi.c2.model.extension.PropertyDescriptor();
                     final List<AllowableValue> allowableValues = descriptor.getAllowableValues();
                     if (allowableValues != null && !allowableValues.isEmpty()) {

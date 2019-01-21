@@ -44,8 +44,12 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.hortonworks.minifi.c2.model.AgentInfo;
 import com.hortonworks.minifi.c2.model.C2Heartbeat;
+import com.hortonworks.minifi.c2.model.DeviceInfo;
+import com.hortonworks.minifi.c2.model.FlowInfo;
 import com.hortonworks.minifi.c2.model.extension.ProcessorDefinition;
 import org.apache.nifi.minifi.commons.status.FlowStatusReport;
 import org.apache.nifi.minifi.status.StatusRequestException;
@@ -246,16 +250,69 @@ public class BootstrapListener {
     }
 
     private void provideHeartbeat(final OutputStream out, C2Heartbeat c2Heartbeat) throws IOException {
-        logger.error("Generating Manifest");
+        logger.error("Generating payload...");
         final ObjectOutputStream oos = new ObjectOutputStream(out);
         final ObjectMapper jacksonObjectMapper = new ObjectMapper();
-        final String heartbeatString = jacksonObjectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(c2Heartbeat);
-        List<ProcessorDefinition> processorsample = c2Heartbeat.getAgentInfo().getAgentManifest().getComponentManifest().getProcessors().stream().limit(10).collect(Collectors.toList());
-        logger.error("Processorsample: {}", jacksonObjectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(processorsample));
-//        logger.warn("heartbeat: {}", heartbeatString);
+        jacksonObjectMapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
+
+        final Payload payload = new Payload(c2Heartbeat);
+        final String heartbeatString = jacksonObjectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(payload);
+        if (!heartbeatString.contains("operation")) {
+            logger.error("Payload did not contain operation :(");
+        }
+//        List<ProcessorDefinition> processorsample = c2Heartbeat.getAgentInfo().getAgentManifest().getComponentManifest().getProcessors().stream().limit(10).collect(Collectors.toList());
+        logger.warn("Payload: {}", heartbeatString);
         oos.writeObject(heartbeatString);
         oos.close();
     }
+
+    private class Payload {
+
+        private String operation;
+        private AgentInfo agentInfo;
+        private DeviceInfo deviceInfo;
+        private FlowInfo flowInfo;
+
+        public Payload(C2Heartbeat heartbeat) {
+            this.operation = "heartbeat";
+            this.agentInfo = heartbeat.getAgentInfo();
+            this.deviceInfo = heartbeat.getDeviceInfo();
+            this.flowInfo = heartbeat.getFlowInfo();
+        }
+
+        public String getOperation() {
+            return operation;
+        }
+
+        public void setOperation(String operation) {
+            this.operation = operation;
+        }
+
+        public AgentInfo getAgentInfo() {
+            return agentInfo;
+        }
+
+        public void setAgentInfo(AgentInfo agentInfo) {
+            this.agentInfo = agentInfo;
+        }
+
+        public DeviceInfo getDeviceInfo() {
+            return deviceInfo;
+        }
+
+        public void setDeviceInfo(DeviceInfo deviceInfo) {
+            this.deviceInfo = deviceInfo;
+        }
+
+        public FlowInfo getFlowInfo() {
+            return flowInfo;
+        }
+
+        public void setFlowInfo(FlowInfo flowInfo) {
+            this.flowInfo = flowInfo;
+        }
+    }
+
 
     private void writeStatusReport(String flowStatusRequestString, final OutputStream out) throws IOException, StatusRequestException {
         ObjectOutputStream oos = new ObjectOutputStream(out);

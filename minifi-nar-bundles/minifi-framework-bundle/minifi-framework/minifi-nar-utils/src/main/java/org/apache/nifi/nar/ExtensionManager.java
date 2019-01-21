@@ -130,7 +130,6 @@ public class ExtensionManager {
      */
     @SuppressWarnings("unchecked")
     private static void loadExtensions(final Bundle bundle) {
-        logger.error("loading extensions....");
         for (final Map.Entry<Class, Set<Class>> entry : definitionMap.entrySet()) {
             final boolean isControllerService = ControllerService.class.equals(entry.getKey());
             final boolean isProcessor = Processor.class.equals(entry.getKey());
