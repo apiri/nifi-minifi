@@ -259,7 +259,7 @@ public class BootstrapListener {
         final String heartbeatString = jacksonObjectMapper.writeValueAsString(payload);
 
 //        List<ProcessorDefinition> processorsample = c2Heartbeat.getAgentInfo().getAgentManifest().getComponentManifest().getProcessors().stream().limit(10).collect(Collectors.toList());
-        logger.warn("Payload: {}", heartbeatString);
+        logger.trace("Payload: {}", heartbeatString);
         oos.writeObject(heartbeatString);
         oos.close();
     }

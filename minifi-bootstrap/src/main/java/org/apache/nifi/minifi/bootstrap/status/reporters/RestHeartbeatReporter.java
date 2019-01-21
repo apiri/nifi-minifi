@@ -1,21 +1,13 @@
 package org.apache.nifi.minifi.bootstrap.status.reporters;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.hortonworks.minifi.c2.model.AgentInfo;
-import com.hortonworks.minifi.c2.model.AgentManifest;
-import com.hortonworks.minifi.c2.model.AgentStatus;
-import com.hortonworks.minifi.c2.model.C2Heartbeat;
-import com.hortonworks.minifi.c2.model.DeviceInfo;
-import com.hortonworks.minifi.c2.model.FlowInfo;
-import com.hortonworks.minifi.c2.model.FlowStatus;
-import com.hortonworks.minifi.c2.model.extension.ComponentManifest;
 import okhttp3.MediaType;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.RequestBody;
+import okhttp3.Response;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.nifi.bundle.Bundle;
 import org.apache.nifi.minifi.bootstrap.BootstrapProperties;
 import org.apache.nifi.minifi.bootstrap.QueryableStatusAggregator;
 import org.apache.nifi.minifi.bootstrap.configuration.ingestors.ConfigurableHttpClient;
@@ -23,11 +15,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.util.Date;
-import java.util.HashSet;
 import java.util.Properties;
-import java.util.Random;
-import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
 
 public class RestHeartbeatReporter extends HeartbeatReporter implements ConfigurableHttpClient {
@@ -90,6 +78,8 @@ public class RestHeartbeatReporter extends HeartbeatReporter implements Configur
     }
 
     private class HeartbeatReporter implements Runnable {
+
+
         @Override
         public void run() {
 //            logger.error("****************************************************************************************************************************************************");
@@ -111,17 +101,32 @@ public class RestHeartbeatReporter extends HeartbeatReporter implements Configur
                         .post(requestBody)
                         .url("http://localhost:10080/c2/api/c2-protocol/heartbeat");
                 try {
-                    httpClientReference.get().newCall(requestBuilder.build()).execute();
+                    Response heartbeatResponse = httpClientReference.get().newCall(requestBuilder.build()).execute();
+                    final String responseBody = heartbeatResponse.body().string();
+                    logger.trace("Received heartbeat response {}", responseBody);
+                    ObjectMapper objMapper = new ObjectMapper();
+                    JsonNode responseJsonNode = objMapper.readTree(responseBody);
+
+                    JsonNode requestedOperations = responseJsonNode.get("requestedOperations");
+                    JsonNode operation = requestedOperations.get(0);
+                    if (operation.get("operation").asText().equals("UPDATE")) {
+                        final String opIdentifier = operation.get("identifier").asText();
+                        final JsonNode args = operation.get("args");
+                        final String updateLocation = args.get("location").asText();
+                        logger.trace("Will perform flow update from {} for command #{}", updateLocation, opIdentifier);
+
+                    }
                 } catch (IOException e) {
                     e.printStackTrace();
-                    logger.error("Could not transmit",e);
+                    logger.error("Could not transmit", e);
 
                 }
             } catch (IOException e) {
-                logger.error("Could not transmit",e);
+                logger.error("Could not transmit", e);
             }
         }
     }
+
 
     private String generateHeartbeat() throws IOException {
         return this.agentMonitor.getBundles();

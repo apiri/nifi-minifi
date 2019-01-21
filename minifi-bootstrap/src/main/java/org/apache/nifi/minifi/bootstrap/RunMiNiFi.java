@@ -163,8 +163,6 @@ public class RunMiNiFi implements QueryableStatusAggregator, ConfigurationFileHo
     private ConfigurationChangeCoordinator changeCoordinator;
     private MiNiFiConfigurationChangeListener changeListener;
 
-    private C2HeartBeatService c2HeartbeatService;
-
     private final AtomicReference<ByteBuffer> currentConfigFileReference = new AtomicReference<>();
 
     @Override
