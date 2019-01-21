@@ -256,10 +256,8 @@ public class BootstrapListener {
         jacksonObjectMapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
 
         final Payload payload = new Payload(c2Heartbeat);
-        final String heartbeatString = jacksonObjectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(payload);
-        if (!heartbeatString.contains("operation")) {
-            logger.error("Payload did not contain operation :(");
-        }
+        final String heartbeatString = jacksonObjectMapper.writeValueAsString(payload);
+
 //        List<ProcessorDefinition> processorsample = c2Heartbeat.getAgentInfo().getAgentManifest().getComponentManifest().getProcessors().stream().limit(10).collect(Collectors.toList());
         logger.warn("Payload: {}", heartbeatString);
         oos.writeObject(heartbeatString);

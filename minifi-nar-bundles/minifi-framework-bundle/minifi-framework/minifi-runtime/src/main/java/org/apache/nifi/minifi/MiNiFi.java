@@ -374,9 +374,8 @@ public class MiNiFi {
         buildInfo.setTargetArch("x86_64");
         buildInfo.setTimestamp(new Date().getTime());
         buildInfo.setVersion("1.8.0 u187");
-         agentManifest.setBuildInfo(buildInfo);
+        agentManifest.setBuildInfo(buildInfo);
 
-        final List<ProcessorDefinition> processorDefinitions = new ArrayList<>();
 
         // Determine Bundles
         final List<com.hortonworks.minifi.c2.model.extension.Bundle> c2Bundles = new ArrayList<>();
@@ -390,10 +389,58 @@ public class MiNiFi {
             convertedBundle.setVersion(bundleCoordinate.getVersion());
 
 
-            final ProcessorDefinition procDef = new ProcessorDefinition();
-            ComponentManifest bundleComponentManifest = new ComponentManifest();
+            convertedBundle.setComponentManifest(getBundleManifest(nifiBundle));
 
+            c2Bundles.add(convertedBundle);
+        }
+
+        // Determine components for the bundle
+        // Determine manifest processors
+
+
+//        bundleManifest.setProcessors();
+//        bundleManifest.setControllerServices();
+        // bundleManifest.setApis();
+        // bundleManifest.setReportingTasks();  TODO: Currently not supported in DFM
+
+        /** Component Manifest **/
+//
+//
+//
+//        // Populate Controller Services
+//        final Set<Class> controllerService = ExtensionManager.getExtensions(ControllerService.class);
+//        componentManifest.setControllerServices(null);
+//        componentManifest.setApis(new ArrayList<>());
+//        componentManifest.setReportingTasks(new ArrayList<>());
+
+        agentManifest.setBundles(c2Bundles);
+//        agentManifest.setComponentManifest(componentManifest);
+
+
+        return agentManifest;
+    }
+
+    private ComponentManifest getBundleManifest(Bundle nifiBundle) {
+        ComponentManifest bundleComponentManifest = new ComponentManifest();
+        Set<Class> extensions = ExtensionManager.getExtensions(Processor.class);
+
+        final Map<Class, Bundle> classBundles = new HashMap<>();
+        for (final Class cls : extensions) {
+            classBundles.put(cls, ExtensionManager.getBundle(cls.getClassLoader()));
+        }
+
+
+        for (Bundle bundle : classBundles.values()) {
+            BundleCoordinate bundleCoordinate = bundle.getBundleDetails().getCoordinate();
+            // Determine Processors
+            final List<ProcessorDefinition> processorDefinitions = new ArrayList<>();
+
+            Set<Class> procExtensions = ExtensionManager.getExtensions(Processor.class);
             for (Class cls : ExtensionManager.getExtensions(Processor.class)) {
+                if (!classBundles.get(cls).equals(bundle)) {
+                    continue;
+                }
+                final ProcessorDefinition procDef = new ProcessorDefinition();
                 procDef.setType(cls.getName());
                 procDef.setTypeDescription(getCapabilityDescription(cls));
                 procDef.setPropertyDescriptors(getPropertyDescriptors(cls));
@@ -406,48 +453,13 @@ public class MiNiFi {
                 procDef.setGroup(bundleCoordinate.getGroup());
                 processorDefinitions.add(procDef);
             }
-            convertedBundle.setComponentManifest(bundleComponentManifest);
-
-            c2Bundles.add(convertedBundle);
+            bundleComponentManifest.setProcessors(processorDefinitions);
         }
-
-        // Determine components for the bundle
-        // Determine manifest processors
-        Set<Class> extensions = ExtensionManager.getExtensions(Processor.class);
-
-        final Map<Class, Bundle> classBundles = new HashMap<>();
-        for (final Class cls : extensions) {
-            classBundles.put(cls, ExtensionManager.getBundle(cls.getClassLoader()));
-        }
-
-        final List<Class> sortedClasses = new ArrayList<>(classBundles.keySet());
-        Collections.sort(sortedClasses, CLASS_NAME_COMPARATOR);
-
-//        bundleManifest.setProcessors();
-//        bundleManifest.setControllerServices();
-        // bundleManifest.setApis();
-        // bundleManifest.setReportingTasks();  TODO: Currently not supported in DFM
-
-        /** Component Manifest **/
-        final ComponentManifest componentManifest = new ComponentManifest();
-
-        // Populate Processors
-
-//        logger.warn("component manifest has {} processors", processorDefinitions.size());
-        componentManifest.setProcessors(processorDefinitions);
+        // Determine Controller Services
+        // Determine APIs
 
 
-        // Populate Controller Services
-        final Set<Class> controllerService = ExtensionManager.getExtensions(ControllerService.class);
-        componentManifest.setControllerServices(null);
-        componentManifest.setApis(new ArrayList<>());
-        componentManifest.setReportingTasks(new ArrayList<>());
-
-        agentManifest.setBundles(c2Bundles);
-//        agentManifest.setComponentManifest(componentManifest);
-
-
-        return agentManifest;
+        return bundleComponentManifest;
     }
 
     private List<com.hortonworks.minifi.c2.model.extension.Relationship> getSupportedRelationships(Class extClass) {
@@ -488,7 +500,8 @@ public class MiNiFi {
     }
 
 
-    private LinkedHashMap<String, com.hortonworks.minifi.c2.model.extension.PropertyDescriptor> getPropertyDescriptors(Class extClass) {
+    private LinkedHashMap<String, com.hortonworks.minifi.c2.model.extension.PropertyDescriptor> getPropertyDescriptors
+            (Class extClass) {
 
         final LinkedHashMap<String, com.hortonworks.minifi.c2.model.extension.PropertyDescriptor> c2PropDescriptors = new LinkedHashMap<>();
 
@@ -515,7 +528,7 @@ public class MiNiFi {
                         c2Prop.setAllowableValues(convert(allowableValues));
                     }
                     c2Prop.setDefaultValue(descriptor.getDefaultValue());
-                    c2Prop.setDescription(descriptor.getDescription());
+                    c2Prop.setDescription("description");
                     c2Prop.setDisplayName(descriptor.getDisplayName());
                     c2Prop.setDynamic(descriptor.isDynamic());
                     c2Prop.setName(descriptor.getName());
@@ -547,7 +560,8 @@ public class MiNiFi {
         return propertyAllowableValues;
     }
 
-    protected Collection<Processor> getComponents(final String type, final String identifier, final BundleCoordinate bundleCoordinate, final Set<URL> additionalUrls) throws ProcessorInstantiationException {
+    protected Collection<Processor> getComponents(final String type, final String identifier,
+                                                  final BundleCoordinate bundleCoordinate, final Set<URL> additionalUrls) throws ProcessorInstantiationException {
         Set<Class> processorExtensions = ExtensionManager.getExtensions(Processor.class);
         for (final Class<?> extensionClass : processorExtensions) {
             if (ConfigurableComponent.class.isAssignableFrom(extensionClass)) {
