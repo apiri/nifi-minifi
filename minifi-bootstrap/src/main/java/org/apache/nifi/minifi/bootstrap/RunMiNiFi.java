@@ -1340,7 +1340,7 @@ public class RunMiNiFi implements QueryableStatusAggregator, ConfigurationFileHo
     }
 
     public String getLoadedBundles(final int port, final String secretKey, final Logger logger ) throws IOException {
-        logger.warn("Pinging {}", port);
+        logger.trace("Pinging {}", port);
 
         try (final Socket socket = new Socket("localhost", port)) {
             final OutputStream out = socket.getOutputStream();
@@ -1349,12 +1349,12 @@ public class RunMiNiFi implements QueryableStatusAggregator, ConfigurationFileHo
             logger.debug("Sending command to MiNiFi: {}", commandWithArgs);
             out.flush();
 
-            logger.warn("Sent COMPONENT_MANIFEST_CMD to MiNiFi");
+            logger.trace("Sent COMPONENT_MANIFEST_CMD to MiNiFi");
             socket.setSoTimeout(5000);
             final InputStream in = socket.getInputStream();
 
             ObjectInputStream ois = new ObjectInputStream(in);
-            logger.debug("COMPONENT_MANIFEST_CMD response received");
+            logger.trace("COMPONENT_MANIFEST_CMD response received");
             Object o = ois.readObject();
             ois.close();
             out.close();

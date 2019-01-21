@@ -42,9 +42,11 @@ import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.stream.Collectors;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.hortonworks.minifi.c2.model.C2Heartbeat;
+import com.hortonworks.minifi.c2.model.extension.ProcessorDefinition;
 import org.apache.nifi.minifi.commons.status.FlowStatusReport;
 import org.apache.nifi.minifi.status.StatusRequestException;
 import org.apache.nifi.util.LimitingInputStream;
@@ -248,7 +250,9 @@ public class BootstrapListener {
         final ObjectOutputStream oos = new ObjectOutputStream(out);
         final ObjectMapper jacksonObjectMapper = new ObjectMapper();
         final String heartbeatString = jacksonObjectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(c2Heartbeat);
-        logger.warn("heartbeat: {}", heartbeatString);
+        List<ProcessorDefinition> processorsample = c2Heartbeat.getAgentInfo().getAgentManifest().getComponentManifest().getProcessors().stream().limit(10).collect(Collectors.toList());
+        logger.error("Processorsample: {}", jacksonObjectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(processorsample));
+//        logger.warn("heartbeat: {}", heartbeatString);
         oos.writeObject(heartbeatString);
         oos.close();
     }

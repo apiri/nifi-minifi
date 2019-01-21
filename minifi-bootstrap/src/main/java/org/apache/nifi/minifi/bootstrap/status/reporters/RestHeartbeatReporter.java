@@ -47,6 +47,7 @@ public class RestHeartbeatReporter extends HeartbeatReporter implements Configur
         objectMapper = new ObjectMapper();
         this.agentMonitor = queryableStatusAggregator;
 
+
         if (!bootstrapProperties.isC2Enabled()) {
             throw new IllegalArgumentException("Cannot initialize the REST HeartbeatReporter when C2 is not enabled");
         }
@@ -91,9 +92,9 @@ public class RestHeartbeatReporter extends HeartbeatReporter implements Configur
     private class HeartbeatReporter implements Runnable {
         @Override
         public void run() {
-            logger.error("****************************************************************************************************************************************************");
-            logger.error("Performing heartbeat at " + new Date());
-            logger.error("****************************************************************************************************************************************************");
+//            logger.error("****************************************************************************************************************************************************");
+//            logger.error("Performing heartbeat at " + new Date());
+//            logger.error("****************************************************************************************************************************************************");
 
             C2Heartbeat heartbeat = generateHeartbeat();
             String heartbeatString = null;
@@ -117,62 +118,12 @@ public class RestHeartbeatReporter extends HeartbeatReporter implements Configur
     }
 
     private C2Heartbeat generateHeartbeat() {
-
-        // Populate AgentInfo
-        final AgentInfo agentInfo = new AgentInfo();
-//        agentInfo.setAgentClass(this.agentClass);
-//        if (this.agentClass == null) {
-        agentInfo.setAgentClass("devclass");
-//        }
-        agentInfo.setIdentifier("AGENTINFOIDENTIFIER");
-        final AgentStatus agentStatus = new AgentStatus();
-        agentStatus.setComponents(null);
-        agentStatus.setRepositories(null);
-        agentStatus.setUptime(System.currentTimeMillis() / new Random().nextLong());
-        agentInfo.setStatus(agentStatus);
-        final AgentManifest agentManifest = new AgentManifest();
-        agentManifest.setVersion("1");
-        agentManifest.setIdentifier(null);
-        final ComponentManifest componentManifest = new ComponentManifest();
-        componentManifest.setProcessors(null);
-        componentManifest.setApis(null);
-        componentManifest.setControllerServices(null);
-        componentManifest.setReportingTasks(null);
-        agentManifest.setComponentManifest(componentManifest);
-        agentInfo.setAgentManifest(agentManifest);
-
-
-        Set<Bundle> bundles = new HashSet<>();
+        C2Heartbeat heartbeat = new C2Heartbeat();
         try {
-            logger.error("Bundles are: {}", agentMonitor.getBundles());
-        } catch (IOException ioe) {
-            logger.error("Could not get all bundles for instance", ioe);
+            this.agentMonitor.getBundles();
+        } catch (Exception e) {
+
         }
-
-
-        // Populate DeviceInfo
-        final DeviceInfo deviceInfo = new DeviceInfo();
-        deviceInfo.setIdentifier("DEVICEINFOIDENTIFIER");
-        deviceInfo.setNetworkInfo(null);
-        deviceInfo.setSystemInfo(null);
-
-        // Populate FlowInfo
-        final FlowInfo flowInfo = new FlowInfo();
-        flowInfo.setFlowId("flow identifer");
-        FlowStatus flowStatus = new FlowStatus();
-        flowStatus.setComponents(null);
-        flowStatus.setQueues(null);
-        flowInfo.setStatus(flowStatus);
-        flowInfo.setVersionedFlowSnapshotURI(null);
-
-        // Populate heartbeat
-        final C2Heartbeat heartbeat = new C2Heartbeat();
-        heartbeat.setAgentInfo(agentInfo);
-        heartbeat.setDeviceInfo(deviceInfo);
-        heartbeat.setFlowInfo(flowInfo);
-        heartbeat.setCreated(new Date().getTime());
-        heartbeat.setIdentifier("IDENTIFIER");
-
         return heartbeat;
     }
 
