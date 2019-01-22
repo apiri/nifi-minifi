@@ -18,11 +18,10 @@ package org.apache.nifi.minifi.bootstrap;
 
 import org.apache.commons.io.input.TeeInputStream;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.nifi.bundle.Bundle;
-import org.apache.nifi.minifi.c2.C2HeartBeatService;
 import org.apache.nifi.minifi.bootstrap.configuration.ConfigurationChangeCoordinator;
 import org.apache.nifi.minifi.bootstrap.configuration.ConfigurationChangeException;
 import org.apache.nifi.minifi.bootstrap.configuration.ConfigurationChangeListener;
+import org.apache.nifi.minifi.bootstrap.configuration.ConfigurationChangeNotifier;
 import org.apache.nifi.minifi.bootstrap.status.PeriodicStatusReporter;
 import org.apache.nifi.minifi.bootstrap.util.ConfigTransformer;
 import org.apache.nifi.minifi.commons.status.FlowStatusReport;
@@ -1335,6 +1334,11 @@ public class RunMiNiFi implements QueryableStatusAggregator, ConfigurationFileHo
         final Status status = getStatus(logger);
         final Properties props = loadProperties(logger);
         return this.getLoadedBundles(status.getPort(), props.getProperty("secret.key"), logger);
+    }
+
+    @Override
+    public ConfigurationChangeNotifier getConfigChangeNotifier() {
+        return this.changeCoordinator;
     }
 
     public String getLoadedBundles(final int port, final String secretKey, final Logger logger ) throws IOException {

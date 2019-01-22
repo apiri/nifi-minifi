@@ -2,23 +2,55 @@ package org.apache.nifi.minifi.bootstrap.status.reporters;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import okhttp3.Credentials;
+import okhttp3.HttpUrl;
 import okhttp3.MediaType;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.RequestBody;
 import okhttp3.Response;
+import okhttp3.ResponseBody;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.nifi.minifi.bootstrap.BootstrapProperties;
+import org.apache.nifi.minifi.bootstrap.ConfigurationFileHolder;
 import org.apache.nifi.minifi.bootstrap.QueryableStatusAggregator;
+import org.apache.nifi.minifi.bootstrap.RunMiNiFi;
+import org.apache.nifi.minifi.bootstrap.configuration.ConfigurationChangeNotifier;
+import org.apache.nifi.minifi.bootstrap.configuration.differentiators.WholeConfigDifferentiator;
+import org.apache.nifi.minifi.bootstrap.configuration.differentiators.interfaces.Differentiator;
 import org.apache.nifi.minifi.bootstrap.configuration.ingestors.ConfigurableHttpClient;
+import org.apache.nifi.minifi.bootstrap.configuration.ingestors.interfaces.ChangeIngestor;
+import org.apache.nifi.minifi.bootstrap.util.ByteBufferInputStream;
+import org.apache.nifi.minifi.commons.schema.ConfigSchema;
+import org.apache.nifi.minifi.commons.schema.SecurityPropertiesSchema;
+import org.apache.nifi.minifi.commons.schema.common.ConvertableSchema;
+import org.apache.nifi.minifi.commons.schema.common.StringUtil;
+import org.apache.nifi.minifi.commons.schema.serialization.SchemaLoader;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.yaml.snakeyaml.Yaml;
 
+import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
+import java.net.InetSocketAddress;
+import java.net.Proxy;
+import java.nio.ByteBuffer;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Objects;
 import java.util.Properties;
+import java.util.concurrent.ScheduledThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Supplier;
 
-public class RestHeartbeatReporter extends HeartbeatReporter implements ConfigurableHttpClient {
+import static org.apache.nifi.minifi.bootstrap.configuration.ConfigurationChangeCoordinator.NOTIFIER_INGESTORS_KEY;
+import static org.apache.nifi.minifi.bootstrap.configuration.differentiators.WholeConfigDifferentiator.WHOLE_CONFIG_KEY;
+
+public class RestHeartbeatReporter extends HeartbeatReporter implements ConfigurableHttpClient, ChangeIngestor {
 
     private static final Logger logger = LoggerFactory.getLogger(RestHeartbeatReporter.class);
 
@@ -29,11 +61,15 @@ public class RestHeartbeatReporter extends HeartbeatReporter implements Configur
     private ObjectMapper objectMapper;
     private final AtomicLong pollingPeriodMS = new AtomicLong();
 
+    private final AtomicReference<FlowUpdateInfo> updateInfo = new AtomicReference<>();
+
     @Override
     public void initialize(Properties properties, QueryableStatusAggregator queryableStatusAggregator) {
         final BootstrapProperties bootstrapProperties = new BootstrapProperties(properties);
+        this.properties.set(properties);
         objectMapper = new ObjectMapper();
         this.agentMonitor = queryableStatusAggregator;
+        this.configurationChangeNotifier = queryableStatusAggregator.getConfigChangeNotifier();
 
 
         if (!bootstrapProperties.isC2Enabled()) {
@@ -75,6 +111,171 @@ public class RestHeartbeatReporter extends HeartbeatReporter implements Configur
 
         httpClientReference.set(okHttpClientBuilder.build());
         reportRunner = new RestHeartbeatReporter.HeartbeatReporter();
+        differentiator = WholeConfigDifferentiator.getByteBufferDifferentiator();
+
+        differentiator.initialize(properties, queryableStatusAggregator);
+    }
+
+    // Handle change ingestor
+
+    private static final Map<String, Supplier<Differentiator<ByteBuffer>>> DIFFERENTIATOR_CONSTRUCTOR_MAP;
+
+    static {
+        HashMap<String, Supplier<Differentiator<ByteBuffer>>> tempMap = new HashMap<>();
+        tempMap.put(WHOLE_CONFIG_KEY, WholeConfigDifferentiator::getByteBufferDifferentiator);
+
+        DIFFERENTIATOR_CONSTRUCTOR_MAP = Collections.unmodifiableMap(tempMap);
+    }
+
+    private static final String DEFAULT_CONNECT_TIMEOUT_MS = "5000";
+    private static final String DEFAULT_READ_TIMEOUT_MS = "15000";
+
+    private static final String PULL_HTTP_BASE_KEY = NOTIFIER_INGESTORS_KEY + ".pull.http";
+    public static final String PULL_HTTP_POLLING_PERIOD_KEY = PULL_HTTP_BASE_KEY + ".period.ms";
+    public static final String PORT_KEY = PULL_HTTP_BASE_KEY + ".port";
+    public static final String HOST_KEY = PULL_HTTP_BASE_KEY + ".hostname";
+    public static final String PATH_KEY = PULL_HTTP_BASE_KEY + ".path";
+    public static final String QUERY_KEY = PULL_HTTP_BASE_KEY + ".query";
+    public static final String PROXY_HOST_KEY = PULL_HTTP_BASE_KEY + ".proxy.hostname";
+    public static final String PROXY_PORT_KEY = PULL_HTTP_BASE_KEY + ".proxy.port";
+    public static final String PROXY_USERNAME = PULL_HTTP_BASE_KEY + ".proxy.username";
+    public static final String PROXY_PASSWORD = PULL_HTTP_BASE_KEY + ".proxy.password";
+    public static final String TRUSTSTORE_LOCATION_KEY = PULL_HTTP_BASE_KEY + ".truststore.location";
+    public static final String TRUSTSTORE_PASSWORD_KEY = PULL_HTTP_BASE_KEY + ".truststore.password";
+    public static final String TRUSTSTORE_TYPE_KEY = PULL_HTTP_BASE_KEY + ".truststore.type";
+    public static final String KEYSTORE_LOCATION_KEY = PULL_HTTP_BASE_KEY + ".keystore.location";
+    public static final String KEYSTORE_PASSWORD_KEY = PULL_HTTP_BASE_KEY + ".keystore.password";
+    public static final String KEYSTORE_TYPE_KEY = PULL_HTTP_BASE_KEY + ".keystore.type";
+    public static final String CONNECT_TIMEOUT_KEY = PULL_HTTP_BASE_KEY + ".connect.timeout.ms";
+    public static final String READ_TIMEOUT_KEY = PULL_HTTP_BASE_KEY + ".read.timeout.ms";
+    public static final String DIFFERENTIATOR_KEY = PULL_HTTP_BASE_KEY + ".differentiator";
+    public static final String USE_ETAG_KEY = PULL_HTTP_BASE_KEY + ".use.etag";
+    public static final String OVERRIDE_SECURITY = PULL_HTTP_BASE_KEY + ".override.security";
+
+    private final AtomicReference<OkHttpClient> ingestorHttpClientReference = new AtomicReference<>();
+    private final AtomicReference<Integer> portReference = new AtomicReference<>();
+    private final AtomicReference<String> hostReference = new AtomicReference<>();
+    private final AtomicReference<String> pathReference = new AtomicReference<>();
+    private final AtomicReference<String> queryReference = new AtomicReference<>();
+    private volatile Differentiator<ByteBuffer> differentiator;
+    private volatile String connectionScheme;
+    private volatile String lastEtag = "";
+    private volatile boolean useEtag = false;
+    private volatile boolean overrideSecurity = false;
+
+    // 5 minute default pulling period
+    protected static final String DEFAULT_POLLING_PERIOD = "300000";
+
+    private final ScheduledThreadPoolExecutor scheduledThreadPoolExecutor = new ScheduledThreadPoolExecutor(1);
+    protected volatile ConfigurationChangeNotifier configurationChangeNotifier;
+    protected final AtomicReference<Properties> properties = new AtomicReference<>();
+
+    @Override
+    public void initialize(Properties properties, ConfigurationFileHolder configurationFileHolder, ConfigurationChangeNotifier configurationChangeNotifier) {
+
+        this.properties.set(properties);
+
+        pollingPeriodMS.set(Integer.parseInt(properties.getProperty(PULL_HTTP_POLLING_PERIOD_KEY, DEFAULT_POLLING_PERIOD)));
+        if (pollingPeriodMS.get() < 1) {
+            throw new IllegalArgumentException("Property, " + PULL_HTTP_POLLING_PERIOD_KEY + ", for the polling period ms must be set with a positive integer.");
+        }
+
+        final String host = properties.getProperty(HOST_KEY);
+        if (host == null || host.isEmpty()) {
+            throw new IllegalArgumentException("Property, " + HOST_KEY + ", for the hostname to pull configurations from must be specified.");
+        }
+
+        final String path = properties.getProperty(PATH_KEY, "/");
+        final String query = properties.getProperty(QUERY_KEY, "");
+
+        final String portString = (String) properties.get(PORT_KEY);
+        final Integer port;
+        if (portString == null) {
+            throw new IllegalArgumentException("Property, " + PORT_KEY + ", for the hostname to pull configurations from must be specified.");
+        } else {
+            port = Integer.parseInt(portString);
+        }
+
+        portReference.set(port);
+        hostReference.set(host);
+        pathReference.set(path);
+        queryReference.set(query);
+
+        final String useEtagString = (String) properties.getOrDefault(USE_ETAG_KEY, "false");
+        if ("true".equalsIgnoreCase(useEtagString) || "false".equalsIgnoreCase(useEtagString)) {
+            useEtag = Boolean.parseBoolean(useEtagString);
+        } else {
+            throw new IllegalArgumentException("Property, " + USE_ETAG_KEY + ", to specify whether to use the ETag header, must either be a value boolean value (\"true\" or \"false\") or left to " +
+                    "the default value of \"false\". It is set to \"" + useEtagString + "\".");
+        }
+
+        final String overrideSecurityProperties = (String) properties.getOrDefault(OVERRIDE_SECURITY, "false");
+        if ("true".equalsIgnoreCase(overrideSecurityProperties) || "false".equalsIgnoreCase(overrideSecurityProperties)) {
+            overrideSecurity = Boolean.parseBoolean(overrideSecurityProperties);
+        } else {
+            throw new IllegalArgumentException("Property, " + OVERRIDE_SECURITY + ", to specify whether to override security properties must either be a value boolean value (\"true\" or \"false\")" +
+                    " or left to the default value of \"false\". It is set to \"" + overrideSecurityProperties + "\".");
+        }
+
+        ingestorHttpClientReference.set(null);
+
+        final OkHttpClient.Builder okHttpClientBuilder = new OkHttpClient.Builder();
+
+        // Set timeouts
+        okHttpClientBuilder.connectTimeout(Long.parseLong(properties.getProperty(CONNECT_TIMEOUT_KEY, DEFAULT_CONNECT_TIMEOUT_MS)), TimeUnit.MILLISECONDS);
+        okHttpClientBuilder.readTimeout(Long.parseLong(properties.getProperty(READ_TIMEOUT_KEY, DEFAULT_READ_TIMEOUT_MS)), TimeUnit.MILLISECONDS);
+
+        // Set whether to follow redirects
+        okHttpClientBuilder.followRedirects(true);
+
+        String proxyHost = properties.getProperty(PROXY_HOST_KEY, "");
+        if (!proxyHost.isEmpty()) {
+            String proxyPort = properties.getProperty(PROXY_PORT_KEY);
+            if (proxyPort == null || proxyPort.isEmpty()) {
+                throw new IllegalArgumentException("Proxy port required if proxy specified.");
+            }
+            okHttpClientBuilder.proxy(new Proxy(Proxy.Type.HTTP, new InetSocketAddress(proxyHost, Integer.parseInt(proxyPort))));
+            String proxyUsername = properties.getProperty(PROXY_USERNAME);
+            if (proxyUsername != null) {
+                String proxyPassword = properties.getProperty(PROXY_PASSWORD);
+                if (proxyPassword == null) {
+                    throw new IllegalArgumentException("Must specify proxy password with proxy username.");
+                }
+                okHttpClientBuilder.proxyAuthenticator((route, response) -> response.request().newBuilder().addHeader("Proxy-Authorization", Credentials.basic(proxyUsername, proxyPassword)).build());
+            }
+        }
+
+//        // check if the ssl path is set and add the factory if so
+//        if (properties.containsKey(KEYSTORE_LOCATION_KEY)) {
+//            try {
+//                setSslSocketFactory(okHttpClientBuilder, properties);
+//                connectionScheme = "https";
+//            } catch (Exception e) {
+//                throw new IllegalStateException(e);
+//            }
+//        } else {
+//            connectionScheme = "http";
+//        }
+
+        ingestorHttpClientReference.set(okHttpClientBuilder.build());
+        final String differentiatorName = properties.getProperty(DIFFERENTIATOR_KEY);
+
+        if (differentiatorName != null && !differentiatorName.isEmpty()) {
+            Supplier<Differentiator<ByteBuffer>> differentiatorSupplier = DIFFERENTIATOR_CONSTRUCTOR_MAP.get(differentiatorName);
+            if (differentiatorSupplier == null) {
+                throw new IllegalArgumentException("Property, " + DIFFERENTIATOR_KEY + ", has value " + differentiatorName + " which does not " +
+                        "correspond to any in the PullHttpChangeIngestor Map:" + DIFFERENTIATOR_CONSTRUCTOR_MAP.keySet());
+            }
+            differentiator = differentiatorSupplier.get();
+        } else {
+            differentiator = WholeConfigDifferentiator.getByteBufferDifferentiator();
+        }
+        differentiator.initialize(properties, configurationFileHolder);
+    }
+
+    @Override
+    public void close() throws IOException {
+
     }
 
     private class HeartbeatReporter implements Runnable {
@@ -88,18 +289,13 @@ public class RestHeartbeatReporter extends HeartbeatReporter implements Configur
 
             try {
                 String heartbeatString = generateHeartbeat();
-//            try {
-//                heartbeatString = objectMapper.writeValueAsString(heartbeat);
-//            } catch (JsonProcessingException e) {
-//
-//                e.printStackTrace();
-//            }
-//            logger.info("Generated heartbeat {}", heartbeatString);
 
                 final RequestBody requestBody = RequestBody.create(MediaType.parse(javax.ws.rs.core.MediaType.APPLICATION_JSON), heartbeatString);
+                final String c2Url = properties.get().getProperty("nifi.c2.rest.url");
+                logger.info("performing request to {}", c2Url);
                 final Request.Builder requestBuilder = new Request.Builder()
                         .post(requestBody)
-                        .url("http://localhost:10080/c2/api/c2-protocol/heartbeat");
+                        .url(c2Url);
                 try {
                     Response heartbeatResponse = httpClientReference.get().newCall(requestBuilder.build()).execute();
                     final String responseBody = heartbeatResponse.body().string();
@@ -113,7 +309,10 @@ public class RestHeartbeatReporter extends HeartbeatReporter implements Configur
                         final String opIdentifier = operation.get("identifier").asText();
                         final JsonNode args = operation.get("args");
                         final String updateLocation = args.get("location").asText();
+
+                        final FlowUpdateInfo fui = new FlowUpdateInfo(updateLocation, opIdentifier);
                         logger.trace("Will perform flow update from {} for command #{}", updateLocation, opIdentifier);
+                        updateInfo.set(fui);
 
                     }
                 } catch (IOException e) {
@@ -124,9 +323,125 @@ public class RestHeartbeatReporter extends HeartbeatReporter implements Configur
             } catch (IOException e) {
                 logger.error("Could not transmit", e);
             }
+
+            // Attempt to pull config
+            if (updateInfo.get() == null) {
+                logger.info("Not performing flow update.");
+                return;
+            }
+
+            final FlowUpdateInfo originalFlowUpdateInfo = updateInfo.get();
+            logger.debug("Attempting to pull new config from {}", originalFlowUpdateInfo.getFlowUpdateUrl());
+
+
+            final Request.Builder requestBuilder = new Request.Builder()
+                    .get()
+                    .url(originalFlowUpdateInfo.getFlowUpdateUrl());
+
+
+            final Request request = requestBuilder.build();
+
+            ResponseBody body = null;
+            try (Response response = httpClientReference.get().newCall(request).execute()) {
+                logger.debug("Response received: {}", response.toString());
+
+                int code = response.code();
+
+                if (code >= 400) {
+                    throw new IOException("Got response code " + code + " while trying to pull configuration: " + response.body().string());
+                }
+
+                body = response.body();
+
+                if (body == null) {
+                    logger.warn("No body returned when pulling a new configuration");
+                    return;
+                }
+
+                final ByteBuffer bodyByteBuffer = ByteBuffer.wrap(body.bytes());
+                ByteBuffer readOnlyNewConfig = null;
+
+                // checking if some parts of the configuration must be preserved
+                if (overrideSecurity) {
+                    readOnlyNewConfig = bodyByteBuffer.asReadOnlyBuffer();
+                } else {
+                    logger.debug("Preserving previous security properties...");
+
+                    // get the current security properties from the current configuration file
+                    final File configFile = new File(properties.get().getProperty(RunMiNiFi.MINIFI_CONFIG_FILE_KEY));
+                    ConvertableSchema<ConfigSchema> configSchema = SchemaLoader.loadConvertableSchemaFromYaml(new FileInputStream(configFile));
+                    ConfigSchema currentSchema = configSchema.convert();
+                    SecurityPropertiesSchema secProps = currentSchema.getSecurityProperties();
+
+                    // override the security properties in the pulled configuration with the previous properties
+                    configSchema = SchemaLoader.loadConvertableSchemaFromYaml(new ByteBufferInputStream(bodyByteBuffer.duplicate()));
+                    ConfigSchema newSchema = configSchema.convert();
+                    newSchema.setSecurityProperties(secProps);
+
+                    // return the updated configuration preserving the previous security configuration
+                    readOnlyNewConfig = ByteBuffer.wrap(new Yaml().dump(newSchema.toMap()).getBytes()).asReadOnlyBuffer();
+                }
+
+                if (differentiator.isNew(readOnlyNewConfig)) {
+                    logger.debug("New change received, notifying listener");
+                    agentMonitor.getConfigChangeNotifier().notifyListeners(readOnlyNewConfig);
+                    logger.debug("Listeners notified");
+                } else {
+                    logger.debug("Pulled config same as currently running.");
+                }
+
+                if (useEtag) {
+                    lastEtag = (new StringBuilder("\""))
+                            .append(response.header("ETag").trim())
+                            .append("\"").toString();
+                }
+            } catch (Exception e) {
+                logger.warn("Hit an exception while trying to pull", e);
+            }
+
+            //  Clear flowupdate after successful change
+            if (updateInfo.compareAndSet(originalFlowUpdateInfo, null)) {
+                logger.info("Finished for flow at {}", originalFlowUpdateInfo.getFlowUpdateUrl());
+                logger.info("Value was nullified as there was no change");
+            } else {
+                logger.info("Value was changed while performing update");
+            }
+
+
         }
     }
 
+    private class FlowUpdateInfo {
+        private final String flowUpdateUrl;
+        private final String requestId;
+
+        public FlowUpdateInfo(final String flowUpdateUrl, final String requestId) {
+            this.flowUpdateUrl = flowUpdateUrl;
+            this.requestId = requestId;
+        }
+
+        public String getFlowUpdateUrl() {
+            return flowUpdateUrl;
+        }
+
+        public String getRequestId() {
+            return requestId;
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+            FlowUpdateInfo that = (FlowUpdateInfo) o;
+            return Objects.equals(flowUpdateUrl, that.flowUpdateUrl) &&
+                    Objects.equals(requestId, that.requestId);
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(flowUpdateUrl, requestId);
+        }
+    }
 
     private String generateHeartbeat() throws IOException {
         return this.agentMonitor.getBundles();

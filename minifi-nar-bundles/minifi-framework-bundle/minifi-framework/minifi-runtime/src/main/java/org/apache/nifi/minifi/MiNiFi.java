@@ -31,6 +31,8 @@ import com.hortonworks.minifi.c2.model.extension.ControllerServiceDefinition;
 import com.hortonworks.minifi.c2.model.extension.InputRequirement;
 import com.hortonworks.minifi.c2.model.extension.ProcessorDefinition;
 import com.hortonworks.minifi.c2.model.extension.PropertyAllowableValue;
+import com.hortonworks.minifi.c2.model.extension.SchedulingDefaults;
+import com.hortonworks.minifi.c2.model.extension.SchedulingStrategy;
 import org.apache.commons.collections4.map.HashedMap;
 import org.apache.nifi.annotation.documentation.CapabilityDescription;
 import org.apache.nifi.bundle.Bundle;
@@ -377,6 +379,14 @@ public class MiNiFi {
         buildInfo.setTimestamp(new Date().getTime());
         buildInfo.setVersion("1.8.0 u187");
         agentManifest.setBuildInfo(buildInfo);
+        SchedulingDefaults schedulingDefaults = new SchedulingDefaults();
+        schedulingDefaults.setDefaultMaxConcurrentTasks("1");
+        schedulingDefaults.setDefaultRunDurationNanos(0);
+        schedulingDefaults.setDefaultSchedulingPeriodMillis(0);
+        schedulingDefaults.setDefaultSchedulingStrategy(SchedulingStrategy.TIMER_DRIVEN);
+        schedulingDefaults.setPenalizationPeriodMillis(TimeUnit.SECONDS.convert(10, TimeUnit.MILLISECONDS));
+        schedulingDefaults.setYieldDurationMillis(TimeUnit.SECONDS.convert(1, TimeUnit.MILLISECONDS));
+        agentManifest.setSchedulingDefaults(schedulingDefaults);
 
 
         // Determine Bundles
