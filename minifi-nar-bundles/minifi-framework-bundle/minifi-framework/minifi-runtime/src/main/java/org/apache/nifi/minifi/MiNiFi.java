@@ -16,7 +16,6 @@
  */
 package org.apache.nifi.minifi;
 
-import com.google.common.collect.Sets;
 import com.hortonworks.minifi.c2.model.AgentInfo;
 import com.hortonworks.minifi.c2.model.AgentManifest;
 import com.hortonworks.minifi.c2.model.AgentStatus;
@@ -33,20 +32,18 @@ import com.hortonworks.minifi.c2.model.extension.ProcessorDefinition;
 import com.hortonworks.minifi.c2.model.extension.PropertyAllowableValue;
 import com.hortonworks.minifi.c2.model.extension.SchedulingDefaults;
 import com.hortonworks.minifi.c2.model.extension.SchedulingStrategy;
-import org.apache.commons.collections4.map.HashedMap;
 import org.apache.nifi.annotation.documentation.CapabilityDescription;
 import org.apache.nifi.bundle.Bundle;
 import org.apache.nifi.bundle.BundleCoordinate;
 import org.apache.nifi.components.AllowableValue;
 import org.apache.nifi.components.ConfigurableComponent;
 import org.apache.nifi.components.PropertyDescriptor;
-import org.apache.nifi.connectable.Connectable;
 import org.apache.nifi.controller.ControllerService;
 import org.apache.nifi.controller.exception.ProcessorInstantiationException;
+import org.apache.nifi.minifi.nar.NarUnpacker;
+import org.apache.nifi.minifi.nar.SystemBundle;
 import org.apache.nifi.nar.ExtensionManager;
 import org.apache.nifi.nar.NarClassLoaders;
-import org.apache.nifi.nar.NarUnpacker;
-import org.apache.nifi.nar.SystemBundle;
 import org.apache.nifi.processor.Processor;
 import org.apache.nifi.processor.Relationship;
 import org.apache.nifi.util.FileUtils;
@@ -55,18 +52,15 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.bridge.SLF4JBridgeHandler;
 
-import javax.naming.ldap.Control;
 import java.io.File;
 import java.io.IOException;
 import java.lang.Thread.UncaughtExceptionHandler;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.net.URL;
-import java.security.cert.Extension;
 import java.text.Collator;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.Date;
 import java.util.HashMap;
@@ -85,7 +79,6 @@ import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.stream.Collectors;
 
 // These are from the minifi-nar-utils
 
@@ -391,7 +384,7 @@ public class MiNiFi {
 
         // Determine Bundles
         final List<com.hortonworks.minifi.c2.model.extension.Bundle> c2Bundles = new ArrayList<>();
-        for (Bundle nifiBundle : ExtensionManager.getBundles()) {
+        for (Bundle nifiBundle : ExtensionManager.getAllBundles()) {
             final BundleCoordinate bundleCoordinate = nifiBundle.getBundleDetails().getCoordinate();
 
             com.hortonworks.minifi.c2.model.extension.Bundle convertedBundle = new com.hortonworks.minifi.c2.model.extension.Bundle();

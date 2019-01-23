@@ -225,8 +225,8 @@ public class BootstrapListener {
                                         writeStatusReport(flowStatusRequestString, socket.getOutputStream());
                                         break;
                                     case COMPONENT_MANIFEST:
-//                                        logger.trace("Received COMPONENT_MANIFEST request from Bootstrap");
-                                        C2Heartbeat c2Heartbeat = minifi.generateHeartbeat();
+                                        logger.trace("Received COMPONENT_MANIFEST request from Bootstrap");
+                                        final C2Heartbeat c2Heartbeat = minifi.generateHeartbeat();
 //                                        logger.info("Finished inspecting extension class.");
                                         provideHeartbeat(socket.getOutputStream(), c2Heartbeat);
                                         break;
