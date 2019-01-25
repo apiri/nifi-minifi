@@ -53,6 +53,7 @@ import org.slf4j.LoggerFactory;
 import org.slf4j.bridge.SLF4JBridgeHandler;
 
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.lang.Thread.UncaughtExceptionHandler;
 import java.lang.reflect.Constructor;
@@ -69,6 +70,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Properties;
 import java.util.Set;
 import java.util.Timer;
 import java.util.TimerTask;
@@ -345,7 +347,7 @@ public class MiNiFi {
         final AgentInfo agentInfo = new AgentInfo();
 
         // Populate AgentInfo
-        agentInfo.setAgentClass("devclass"); // TODO pull from conf file
+        agentInfo.setAgentClass(getBootstrapProperties().get("c2.agent.class").toString()); // TODO pull from conf file
         agentInfo.setIdentifier("AGENTINFOIDENTIFIER");
 
         final AgentStatus agentStatus = new AgentStatus(); // TODO implement
@@ -583,7 +585,7 @@ public class MiNiFi {
                         c2Prop.setAllowableValues(convert(allowableValues));
                     }
                     c2Prop.setDefaultValue(descriptor.getDefaultValue());
-                    c2Prop.setDescription("description");
+                    c2Prop.setDescription(descriptor.getDescription());
                     c2Prop.setDisplayName(descriptor.getDisplayName());
                     c2Prop.setDynamic(descriptor.isDynamic());
                     c2Prop.setName(descriptor.getName());
@@ -762,5 +764,38 @@ public class MiNiFi {
     private String getCapabilityDescription(final Class<?> cls) {
         final CapabilityDescription capabilityDesc = cls.getAnnotation(CapabilityDescription.class);
         return capabilityDesc == null ? null : capabilityDesc.value();
+    }
+
+    public static final String DEFAULT_CONFIG_FILE = "./conf/bootstrap.conf";
+
+    private Properties getBootstrapProperties() {
+        final Properties bootstrapProperties = new Properties();
+
+        try (final FileInputStream fis = new FileInputStream(getBootstrapConfFile())) {
+            bootstrapProperties.load(fis);
+        } catch (Exception e) {
+            logger.error("Could not locate bootstrap.conf file specified as {}", getBootstrapConfFile());
+        }
+        return bootstrapProperties;
+    }
+
+    public static File getBootstrapConfFile() {
+        String configFilename = System.getProperty("org.apache.nifi.minifi.bootstrap.config.file");
+
+        if (configFilename == null) {
+            final String nifiHome = System.getenv("MINIFI_HOME");
+            if (nifiHome != null) {
+                final File nifiHomeFile = new File(nifiHome.trim());
+                final File configFile = new File(nifiHomeFile, DEFAULT_CONFIG_FILE);
+                configFilename = configFile.getAbsolutePath();
+            }
+        }
+
+        if (configFilename == null) {
+            configFilename = DEFAULT_CONFIG_FILE;
+        }
+
+        final File configFile = new File(configFilename);
+        return configFile;
     }
 }
