@@ -16,6 +16,16 @@
  */
 package org.apache.nifi.minifi;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.hortonworks.minifi.c2.model.C2Heartbeat;
+import org.apache.nifi.minifi.c2.agent.client.Payload;
+import org.apache.nifi.minifi.commons.status.FlowStatusReport;
+import org.apache.nifi.minifi.status.StatusRequestException;
+import org.apache.nifi.util.LimitingInputStream;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.IOException;
@@ -42,20 +52,6 @@ import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.stream.Collectors;
-
-import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.hortonworks.minifi.c2.model.AgentInfo;
-import com.hortonworks.minifi.c2.model.C2Heartbeat;
-import com.hortonworks.minifi.c2.model.DeviceInfo;
-import com.hortonworks.minifi.c2.model.FlowInfo;
-import com.hortonworks.minifi.c2.model.extension.ProcessorDefinition;
-import org.apache.nifi.minifi.commons.status.FlowStatusReport;
-import org.apache.nifi.minifi.status.StatusRequestException;
-import org.apache.nifi.util.LimitingInputStream;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class BootstrapListener {
 
@@ -258,57 +254,9 @@ public class BootstrapListener {
         final Payload payload = new Payload(c2Heartbeat);
         final String heartbeatString = jacksonObjectMapper.writeValueAsString(payload);
 
-//        List<ProcessorDefinition> processorsample = c2Heartbeat.getAgentInfo().getAgentManifest().getComponentManifest().getProcessors().stream().limit(10).collect(Collectors.toList());
         logger.trace("Payload: {}", heartbeatString);
         oos.writeObject(heartbeatString);
         oos.close();
-    }
-
-    private class Payload {
-
-        private String operation;
-        private AgentInfo agentInfo;
-        private DeviceInfo deviceInfo;
-        private FlowInfo flowInfo;
-
-        public Payload(C2Heartbeat heartbeat) {
-            this.operation = "heartbeat";
-            this.agentInfo = heartbeat.getAgentInfo();
-            this.deviceInfo = heartbeat.getDeviceInfo();
-            this.flowInfo = heartbeat.getFlowInfo();
-        }
-
-        public String getOperation() {
-            return operation;
-        }
-
-        public void setOperation(String operation) {
-            this.operation = operation;
-        }
-
-        public AgentInfo getAgentInfo() {
-            return agentInfo;
-        }
-
-        public void setAgentInfo(AgentInfo agentInfo) {
-            this.agentInfo = agentInfo;
-        }
-
-        public DeviceInfo getDeviceInfo() {
-            return deviceInfo;
-        }
-
-        public void setDeviceInfo(DeviceInfo deviceInfo) {
-            this.deviceInfo = deviceInfo;
-        }
-
-        public FlowInfo getFlowInfo() {
-            return flowInfo;
-        }
-
-        public void setFlowInfo(FlowInfo flowInfo) {
-            this.flowInfo = flowInfo;
-        }
     }
 
 
