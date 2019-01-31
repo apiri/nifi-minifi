@@ -60,5 +60,7 @@ public class BootstrapProperties {
         return C2_AGENT_REST_MINIMIZE_UPDATES;
     }
 
-    public String getC2AgentClass() {return getProperty(C2_AGENT_CLASS);}
+    public String getC2AgentClass() {
+        return getProperty(C2_AGENT_CLASS);
+    }
 }

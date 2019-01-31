@@ -19,12 +19,12 @@ import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
-import static org.apache.nifi.minifi.c2.protocol.rest.GarconRestC2Protocol.DEFAULT_GARCON_PORT;
-
 public class C2Agent extends ScheduledThreadPoolExecutor implements HeartbeatReporter {
     private final Logger logger = LoggerFactory.getLogger(C2Agent.class);
 
     private final AtomicReference<ScheduledFuture> execScheduledFutureRef = new AtomicReference<>();
+    public static final int DEFAULT_AGENT_PORT = 10080;
+
 
     protected static final int DEFAULT_THREADPOOL_SIZE = 2;
 
@@ -42,7 +42,7 @@ public class C2Agent extends ScheduledThreadPoolExecutor implements HeartbeatRep
 
     public C2Agent() {
         this(DEFAULT_THREADPOOL_SIZE,
-                new C2ServerC2RestProtocol("localhost", DEFAULT_GARCON_PORT),
+                new C2ServerC2RestProtocol("localhost", DEFAULT_AGENT_PORT),
                 new C2Serializer() {
                 },
                 new C2Deserializer() {
