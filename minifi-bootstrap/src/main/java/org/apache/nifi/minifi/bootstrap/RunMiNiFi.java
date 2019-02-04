@@ -127,7 +127,7 @@ public class RunMiNiFi implements QueryableStatusAggregator, ConfigurationFileHo
     public static final String PING_CMD = "PING";
     public static final String DUMP_CMD = "DUMP";
     public static final String FLOW_STATUS_REPORT_CMD = "FLOW_STATUS_REPORT";
-    public static final String GENERATE_HEARTBEAT_CMD = "COMPONENT_MANIFEST";
+    public static final String GENERATE_HEARTBEAT_CMD = "GENERATE_HEARTBEAT";
 
     public static final String NOTIFIER_PROPERTY_PREFIX = "nifi.minifi.notifier";
     public static final String NOTIFIER_COMPONENTS_KEY = NOTIFIER_PROPERTY_PREFIX + ".components";
