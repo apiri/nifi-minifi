@@ -1,6 +1,6 @@
 package org.apache.nifi.minifi.c2.agent.client;
 
-import rest.C2ServerC2RestProtocol;
+import org.apache.nifi.minifi.c2.protocol.rest.C2ServerC2RestProtocol;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
