@@ -2,7 +2,7 @@ package org.apache.nifi.minifi.c2.protocol.rest;
 
 import com.hortonworks.minifi.c2.client.C2Client;
 import com.hortonworks.minifi.c2.client.impl.jersey.JerseyC2Client;
-import org.apache.nifi.minifi.c2.C2Payload;
+import org.apache.nifi.minifi.c2.agent.client.C2Payload;
 
 public class C2ServerC2RestProtocol extends RestC2Protocol {
 

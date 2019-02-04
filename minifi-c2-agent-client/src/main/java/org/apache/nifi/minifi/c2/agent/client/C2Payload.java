@@ -1,4 +1,4 @@
-package org.apache.nifi.minifi.c2;
+package org.apache.nifi.minifi.c2.agent.client;
 
 import java.util.List;
 
