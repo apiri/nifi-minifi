@@ -1598,19 +1598,21 @@ public class RunMiNiFi implements QueryableStatusAggregator, ConfigurationFileHo
 
         final Properties bootstrapProperties = getBootstrapProperties();
 
-        final String reportersCsv = bootstrapProperties.getProperty(STATUS_REPORTER_COMPONENTS_KEY);
-        if (reportersCsv != null && !reportersCsv.isEmpty()) {
-            for (String reporterClassname : Arrays.asList(reportersCsv.split(","))) {
-                try {
-                    System.out.println("Initializing periodic notifier: " + reporterClassname);
-                    Class<?> reporterClass = Class.forName(reporterClassname);
-                    PeriodicStatusReporter reporter = (PeriodicStatusReporter) reporterClass.newInstance();
-                    reporter.initialize(bootstrapProperties, this);
-                    System.out.println("initialized " + reporterClassname);
-                    statusReporters.add(reporter);
-                } catch (InstantiationException | IllegalAccessException | ClassNotFoundException e) {
-                    System.err.println("Could not initialize reporter " + reporterClassname);
-                    throw new RuntimeException("Issue instantiating notifier " + reporterClassname, e);
+        if(new BootstrapProperties(bootstrapProperties).isC2Enabled()){
+            final String reportersCsv = bootstrapProperties.getProperty(STATUS_REPORTER_COMPONENTS_KEY);
+            if (reportersCsv != null && !reportersCsv.isEmpty()) {
+                for (String reporterClassname : Arrays.asList(reportersCsv.split(","))) {
+                    try {
+                        System.out.println("Initializing periodic notifier: " + reporterClassname);
+                        Class<?> reporterClass = Class.forName(reporterClassname);
+                        PeriodicStatusReporter reporter = (PeriodicStatusReporter) reporterClass.newInstance();
+                        reporter.initialize(bootstrapProperties, this);
+                        System.out.println("initialized " + reporterClassname);
+                        statusReporters.add(reporter);
+                    } catch (InstantiationException | IllegalAccessException | ClassNotFoundException e) {
+                        System.err.println("Could not initialize reporter " + reporterClassname);
+                        throw new RuntimeException("Issue instantiating notifier " + reporterClassname, e);
+                    }
                 }
             }
         }
