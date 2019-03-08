@@ -10,7 +10,7 @@ import okhttp3.RequestBody;
 import okhttp3.Response;
 import okhttp3.ResponseBody;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.nifi.minifi.bootstrap.BootstrapProperties;
+import org.apache.nifi.minifi.bootstrap.C2Properties;
 import org.apache.nifi.minifi.bootstrap.ConfigurationFileHolder;
 import org.apache.nifi.minifi.bootstrap.QueryableStatusAggregator;
 import org.apache.nifi.minifi.bootstrap.RunMiNiFi;
@@ -63,23 +63,23 @@ public class RestHeartbeatReporter extends HeartbeatReporter implements Configur
 
     @Override
     public void initialize(Properties properties, QueryableStatusAggregator queryableStatusAggregator) {
-        final BootstrapProperties bootstrapProperties = new BootstrapProperties(properties);
+        final C2Properties c2Properties = new C2Properties(properties);
         this.properties.set(properties);
         objectMapper = new ObjectMapper();
         this.agentMonitor = queryableStatusAggregator;
         this.configurationChangeNotifier = queryableStatusAggregator.getConfigChangeNotifier();
 
 
-        if (!bootstrapProperties.isC2Enabled()) {
+        if (!c2Properties.isEnabled()) {
             throw new IllegalArgumentException("Cannot initialize the REST HeartbeatReporter when C2 is not enabled");
         }
 
-        this.c2ServerUrl = bootstrapProperties.getC2ServerRestUrl();
-        this.agentClass = bootstrapProperties.getC2AgentClass();
+        this.c2ServerUrl = c2Properties.getRestUrl();
+        this.agentClass = c2Properties.getAgentClass();
 
         pollingPeriodMS.set(1000);
         if (pollingPeriodMS.get() < 1) {
-            throw new IllegalArgumentException("Property, " + BootstrapProperties.C2_AGENT_HEARTBEAT_PERIOD + ", for the polling period ms must be set with a positive integer.");
+            throw new IllegalArgumentException("Property, " + C2Properties.C2_AGENT_HEARTBEAT_PERIOD_KEY + ", for the polling period ms must be set with a positive integer.");
         }
         this.setPeriod((int) pollingPeriodMS.get());
 

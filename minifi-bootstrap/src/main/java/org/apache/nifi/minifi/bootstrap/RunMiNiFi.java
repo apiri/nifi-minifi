@@ -1598,7 +1598,7 @@ public class RunMiNiFi implements QueryableStatusAggregator, ConfigurationFileHo
 
         final Properties bootstrapProperties = getBootstrapProperties();
 
-        if(new BootstrapProperties(bootstrapProperties).isC2Enabled()){
+        if (new C2Properties(bootstrapProperties).isEnabled()) {
             final String reportersCsv = bootstrapProperties.getProperty(STATUS_REPORTER_COMPONENTS_KEY);
             if (reportersCsv != null && !reportersCsv.isEmpty()) {
                 for (String reporterClassname : Arrays.asList(reportersCsv.split(","))) {
