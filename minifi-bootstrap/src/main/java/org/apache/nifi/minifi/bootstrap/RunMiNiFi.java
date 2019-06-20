@@ -133,6 +133,21 @@ public class RunMiNiFi implements QueryableStatusAggregator, ConfigurationFileHo
     public static final String STATUS_REPORTER_PROPERTY_PREFIX = "nifi.minifi.status.reporter";
     public static final String STATUS_REPORTER_COMPONENTS_KEY = STATUS_REPORTER_PROPERTY_PREFIX + ".components";
 
+
+    public static final String SECURITY_KEYSTORE_KEY = "nifi.minifi.security.keystore";
+    public static final String SECURITY_KEYSTORE_TYPE_KEY = "nifi.minifi.security.keystoreType";
+    public static final String SECURITY_KEYSTORE_PASSWORD__KEY = "nifi.minifi.security.keystorePasswd";
+    public static final String SECURITY_KEY_PASSWORD_KEY = "nifi.minifi.security.keyPasswd";
+    public static final String SECURITY_TRUSTSTORE_KEY = "nifi.minifi.security.truststore";
+    public static final String SECURITY_TRUSTSTORE_TYPE_KEY = "nifi.minifi.security.truststoreType";
+    public static final String SECURITY_TRUSTSTORE_PASSWORD_KEY = "nifi.minifi.security.truststorePasswd";
+
+    public static final String SENSITIVE_PROPS_KEY_KEY = "nifi.minifi.sensitive.props.key";
+    public static final String SENSITIVE_PROPS_ALGORIGTHM_KEY = "nifi.minifi.sensitive.props.algorithm";
+    public static final String SENSITIVE_PROPS_PROVIDER_KEY = "nifi.minifi.sensitive.props.provider";
+
+
+
     private volatile boolean autoRestartNiFi = true;
     private volatile int ccPort = -1;
     private volatile long minifiPid = -1L;
