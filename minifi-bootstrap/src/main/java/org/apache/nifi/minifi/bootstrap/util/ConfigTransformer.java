@@ -73,6 +73,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.zip.GZIPOutputStream;
 
@@ -94,9 +95,21 @@ public final class ConfigTransformer {
         transformConfigFile(ios, destPath);
     }
 
+
     public static void transformConfigFile(InputStream sourceStream, String destPath) throws Exception {
+        Optional<SecurityPropertiesSchema> optional = Optional.empty();
+        transformConfigFile(sourceStream, destPath, optional);
+    }
+
+
+    public static void transformConfigFile(InputStream sourceStream, String destPath, Optional<SecurityPropertiesSchema> securityPropertiesOptional) throws Exception {
         ConvertableSchema<ConfigSchema> convertableSchema = throwIfInvalid(SchemaLoader.loadConvertableSchemaFromYaml(sourceStream));
         ConfigSchema configSchema = throwIfInvalid(convertableSchema.convert());
+
+        // See if we are providing defined properties from the filesystem configurations and use those as the definitive values
+        if (securityPropertiesOptional.isPresent()) {
+            configSchema.setSecurityProperties(securityPropertiesOptional.get());
+        }
 
         // Create nifi.properties and flow.xml.gz in memory
         ByteArrayOutputStream nifiPropertiesOutputStream = new ByteArrayOutputStream();
@@ -161,7 +174,7 @@ public final class ConfigTransformer {
             ProvenanceRepositorySchema provenanceRepositorySchema = configSchema.getProvenanceRepositorySchema();
 
             OrderedProperties orderedProperties = new OrderedProperties();
-            orderedProperties.setProperty(NIFI_VERSION_KEY, NIFI_VERSION,"# Core Properties #" + System.lineSeparator());
+            orderedProperties.setProperty(NIFI_VERSION_KEY, NIFI_VERSION, "# Core Properties #" + System.lineSeparator());
             orderedProperties.setProperty("nifi.flow.configuration.file", "./conf/flow.xml.gz");
             orderedProperties.setProperty("nifi.flow.configuration.archive.enabled", "false");
             orderedProperties.setProperty("nifi.flow.configuration.archive.dir", "./conf/archive/");
@@ -271,7 +284,7 @@ public final class ConfigTransformer {
         }
     }
 
-    protected static DOMSource createFlowXml(ConfigSchema configSchema) throws IOException, ConfigurationChangeException, ConfigTransformerException{
+    protected static DOMSource createFlowXml(ConfigSchema configSchema) throws IOException, ConfigurationChangeException, ConfigTransformerException {
         try {
             // create a new, empty document
             final DocumentBuilderFactory docFactory = DocumentBuilderFactory.newInstance();
@@ -302,7 +315,7 @@ public final class ConfigTransformer {
             SecurityPropertiesSchema securityProperties = configSchema.getSecurityProperties();
             if (securityProperties.useSSL()) {
                 Element controllerServicesNode = doc.getElementById("controllerServices");
-                if(controllerServicesNode == null) {
+                if (controllerServicesNode == null) {
                     controllerServicesNode = doc.createElement("controllerServices");
                 }
 
@@ -320,7 +333,7 @@ public final class ConfigTransformer {
             return new DOMSource(doc);
         } catch (final ParserConfigurationException | DOMException | TransformerFactoryConfigurationError | IllegalArgumentException e) {
             throw new ConfigTransformerException(e);
-        } catch (Exception e){
+        } catch (Exception e) {
             throw new ConfigTransformerException("Failed to parse the config YAML while writing the top level of the flow xml", e);
         }
     }
@@ -367,7 +380,7 @@ public final class ConfigTransformer {
             addConfiguration(serviceElement, attributes);
 
             String annotationData = controllerServiceSchema.getAnnotationData();
-            if(annotationData != null && !annotationData.isEmpty()) {
+            if (annotationData != null && !annotationData.isEmpty()) {
                 addTextElement(element, "annotationData", annotationData);
             }
 
@@ -463,7 +476,7 @@ public final class ConfigTransformer {
             addTextElement(element, "runDurationNanos", String.valueOf(processorConfig.getRunDurationNanos()));
 
             String annotationData = processorConfig.getAnnotationData();
-            if(annotationData != null && !annotationData.isEmpty()) {
+            if (annotationData != null && !annotationData.isEmpty()) {
                 addTextElement(element, "annotationData", annotationData);
             }
 
@@ -696,19 +709,19 @@ public final class ConfigTransformer {
 
     public static final String PROPERTIES_FILE_APACHE_2_0_LICENSE =
             " Licensed to the Apache Software Foundation (ASF) under one or more\n" +
-            "# contributor license agreements.  See the NOTICE file distributed with\n" +
-            "# this work for additional information regarding copyright ownership.\n" +
-            "# The ASF licenses this file to You under the Apache License, Version 2.0\n" +
-            "# (the \"License\"); you may not use this file except in compliance with\n" +
-            "# the License.  You may obtain a copy of the License at\n" +
-            "#\n" +
-            "#     http://www.apache.org/licenses/LICENSE-2.0\n" +
-            "#\n" +
-            "# Unless required by applicable law or agreed to in writing, software\n" +
-            "# distributed under the License is distributed on an \"AS IS\" BASIS,\n" +
-            "# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.\n" +
-            "# See the License for the specific language governing permissions and\n" +
-            "# limitations under the License.\n"+
-            "\n";
+                    "# contributor license agreements.  See the NOTICE file distributed with\n" +
+                    "# this work for additional information regarding copyright ownership.\n" +
+                    "# The ASF licenses this file to You under the Apache License, Version 2.0\n" +
+                    "# (the \"License\"); you may not use this file except in compliance with\n" +
+                    "# the License.  You may obtain a copy of the License at\n" +
+                    "#\n" +
+                    "#     http://www.apache.org/licenses/LICENSE-2.0\n" +
+                    "#\n" +
+                    "# Unless required by applicable law or agreed to in writing, software\n" +
+                    "# distributed under the License is distributed on an \"AS IS\" BASIS,\n" +
+                    "# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.\n" +
+                    "# See the License for the specific language governing permissions and\n" +
+                    "# limitations under the License.\n" +
+                    "\n";
 
 }

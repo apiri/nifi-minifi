@@ -23,6 +23,8 @@ import org.apache.nifi.minifi.bootstrap.configuration.ConfigurationChangeExcepti
 import org.apache.nifi.minifi.bootstrap.configuration.ConfigurationChangeListener;
 import org.apache.nifi.minifi.bootstrap.status.PeriodicStatusReporter;
 import org.apache.nifi.minifi.bootstrap.util.ConfigTransformer;
+import org.apache.nifi.minifi.commons.schema.SecurityPropertiesSchema;
+import org.apache.nifi.minifi.commons.schema.SensitivePropsSchema;
 import org.apache.nifi.minifi.commons.status.FlowStatusReport;
 import org.apache.nifi.util.Tuple;
 import org.apache.nifi.util.file.FileUtils;
@@ -77,6 +79,8 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
 
@@ -136,17 +140,48 @@ public class RunMiNiFi implements QueryableStatusAggregator, ConfigurationFileHo
 
     public static final String SECURITY_KEYSTORE_KEY = "nifi.minifi.security.keystore";
     public static final String SECURITY_KEYSTORE_TYPE_KEY = "nifi.minifi.security.keystoreType";
-    public static final String SECURITY_KEYSTORE_PASSWORD__KEY = "nifi.minifi.security.keystorePasswd";
+    public static final String SECURITY_KEYSTORE_PASSWORD_KEY = "nifi.minifi.security.keystorePasswd";
     public static final String SECURITY_KEY_PASSWORD_KEY = "nifi.minifi.security.keyPasswd";
     public static final String SECURITY_TRUSTSTORE_KEY = "nifi.minifi.security.truststore";
     public static final String SECURITY_TRUSTSTORE_TYPE_KEY = "nifi.minifi.security.truststoreType";
     public static final String SECURITY_TRUSTSTORE_PASSWORD_KEY = "nifi.minifi.security.truststorePasswd";
 
     public static final String SENSITIVE_PROPS_KEY_KEY = "nifi.minifi.sensitive.props.key";
-    public static final String SENSITIVE_PROPS_ALGORIGTHM_KEY = "nifi.minifi.sensitive.props.algorithm";
+    public static final String SENSITIVE_PROPS_ALGORITHM_KEY = "nifi.minifi.sensitive.props.algorithm";
     public static final String SENSITIVE_PROPS_PROVIDER_KEY = "nifi.minifi.sensitive.props.provider";
 
+    public static final Set<String> BOOTSTRAP_SECURITY_PROPERTY_KEYS = new HashSet<>(
+            Arrays.asList(SECURITY_KEYSTORE_KEY,
+                    SECURITY_KEYSTORE_TYPE_KEY,
+                    SECURITY_KEYSTORE_PASSWORD_KEY,
+                    SECURITY_KEY_PASSWORD_KEY,
+                    SECURITY_TRUSTSTORE_KEY,
+                    SECURITY_TRUSTSTORE_TYPE_KEY,
+                    SECURITY_TRUSTSTORE_PASSWORD_KEY,
+                    SENSITIVE_PROPS_KEY_KEY,
+                    SENSITIVE_PROPS_ALGORITHM_KEY,
+                    SENSITIVE_PROPS_PROVIDER_KEY));
 
+
+    public static final Map<String, String> BOOTSTRAP_KEYS_TO_YML_KEYS;
+
+    static {
+        final Map<String, String> mutableMap = new HashMap<>();
+        mutableMap.put(SECURITY_KEYSTORE_KEY, SecurityPropertiesSchema.KEYSTORE_KEY);
+        mutableMap.put(SECURITY_KEYSTORE_TYPE_KEY, SecurityPropertiesSchema.KEYSTORE_TYPE_KEY);
+        mutableMap.put(SECURITY_KEYSTORE_PASSWORD_KEY, SecurityPropertiesSchema.KEYSTORE_PASSWORD_KEY);
+        mutableMap.put(SECURITY_KEY_PASSWORD_KEY, SecurityPropertiesSchema.KEY_PASSWORD_KEY);
+
+        mutableMap.put(SECURITY_TRUSTSTORE_KEY, SecurityPropertiesSchema.TRUSTSTORE_KEY);
+        mutableMap.put(SECURITY_TRUSTSTORE_TYPE_KEY, SecurityPropertiesSchema.TRUSTSTORE_TYPE_KEY);
+        mutableMap.put(SECURITY_TRUSTSTORE_PASSWORD_KEY, SecurityPropertiesSchema.TRUSTSTORE_PASSWORD_KEY);
+
+        mutableMap.put(SENSITIVE_PROPS_KEY_KEY, SensitivePropsSchema.SENSITIVE_PROPS_KEY_KEY);
+        mutableMap.put(SENSITIVE_PROPS_ALGORITHM_KEY, SensitivePropsSchema.SENSITIVE_PROPS_ALGORITHM_KEY);
+        mutableMap.put(SENSITIVE_PROPS_PROVIDER_KEY, SensitivePropsSchema.SENSITIVE_PROPS_PROVIDER_KEY);
+
+        BOOTSTRAP_KEYS_TO_YML_KEYS = Collections.unmodifiableMap(mutableMap);
+    }
 
     private volatile boolean autoRestartNiFi = true;
     private volatile int ccPort = -1;
@@ -278,7 +313,7 @@ public class RunMiNiFi implements QueryableStatusAggregator, ConfigurationFileHo
                 runMiNiFi.env();
                 break;
             case "flowstatus":
-                if(args.length == 2) {
+                if (args.length == 2) {
                     System.out.println(runMiNiFi.statusReport(args[1]));
                 } else {
                     System.out.println("The 'flowStatus' command requires an input query. See the System Admin Guide 'FlowStatus Script Query' section for complete details.");
@@ -343,7 +378,7 @@ public class RunMiNiFi implements QueryableStatusAggregator, ConfigurationFileHo
         return getBootstrapFile(logger, MINIFI_PID_DIR_PROP, DEFAULT_PID_DIR, MINIFI_LOCK_FILE_NAME);
     }
 
-    File getStatusFile() throws IOException{
+    File getStatusFile() throws IOException {
         return getStatusFile(defaultLogger);
     }
 
@@ -409,8 +444,8 @@ public class RunMiNiFi implements QueryableStatusAggregator, ConfigurationFileHo
             Files.setPosixFilePermissions(statusFile.toPath(), perms);
         } catch (final Exception e) {
             logger.warn("Failed to set permissions so that only the owner can read status file {}; "
-                + "this may allows others to have access to the key needed to communicate with MiNiFi. "
-                + "Permissions should be changed so that only the owner can read this file", statusFile);
+                    + "this may allows others to have access to the key needed to communicate with MiNiFi. "
+                    + "Permissions should be changed so that only the owner can read this file", statusFile);
         }
 
         try (final FileOutputStream fos = new FileOutputStream(statusFile)) {
@@ -424,7 +459,7 @@ public class RunMiNiFi implements QueryableStatusAggregator, ConfigurationFileHo
     private synchronized void writePidFile(final String pid, final Logger logger) throws IOException {
         final File pidFile = getPidFile(logger);
         if (pidFile.exists() && !pidFile.delete()) {
-           logger.warn("Failed to delete {}", pidFile);
+            logger.warn("Failed to delete {}", pidFile);
         }
 
         if (!pidFile.createNewFile()) {
@@ -584,7 +619,7 @@ public class RunMiNiFi implements QueryableStatusAggregator, ConfigurationFileHo
         final Status status = getStatus(logger);
         if (status.isRespondingToPing()) {
             logger.info("Apache MiNiFi is currently running, listening to Bootstrap on port {}, PID={}",
-                new Object[]{status.getPort(), status.getPid() == null ? "unknown" : status.getPid()});
+                    new Object[]{status.getPort(), status.getPid() == null ? "unknown" : status.getPid()});
             return 0;
         }
 
@@ -819,7 +854,7 @@ public class RunMiNiFi implements QueryableStatusAggregator, ConfigurationFileHo
         } catch (final IOException ioe) {
             if (pid == null) {
                 logger.error("Failed to send shutdown command to port {} due to {}. No PID found for the MiNiFi process, so unable to kill process; "
-                    + "the process should be killed manually.", new Object[]{port, ioe.toString()});
+                        + "the process should be killed manually.", new Object[]{port, ioe.toString()});
             } else {
                 logger.error("Failed to send shutdown command to port {} due to {}. Will kill the MiNiFi Process with PID {}.", port, ioe.toString(), pid);
                 killProcessTree(pid, logger);
@@ -927,7 +962,7 @@ public class RunMiNiFi implements QueryableStatusAggregator, ConfigurationFileHo
         } catch (final IOException ioe) {
             if (pid == null) {
                 logger.error("Failed to send shutdown command to port {} due to {}. No PID found for the MiNiFi process, so unable to kill process; "
-                    + "the process should be killed manually.", new Object[]{port, ioe.toString()});
+                        + "the process should be killed manually.", new Object[]{port, ioe.toString()});
             } else {
                 logger.error("Failed to send shutdown command to port {} due to {}. Will kill the MiNiFi Process with PID {}.", new Object[]{port, ioe.toString(), pid});
                 killProcessTree(pid, logger);
@@ -1012,12 +1047,12 @@ public class RunMiNiFi implements QueryableStatusAggregator, ConfigurationFileHo
             gracefulShutdownSeconds = Integer.parseInt(gracefulShutdown);
         } catch (final NumberFormatException nfe) {
             throw new NumberFormatException("The '" + GRACEFUL_SHUTDOWN_PROP + "' property in Bootstrap Config File "
-                + bootstrapConfigAbsoluteFile.getAbsolutePath() + " has an invalid value. Must be a non-negative integer");
+                    + bootstrapConfigAbsoluteFile.getAbsolutePath() + " has an invalid value. Must be a non-negative integer");
         }
 
         if (gracefulShutdownSeconds < 0) {
             throw new NumberFormatException("The '" + GRACEFUL_SHUTDOWN_PROP + "' property in Bootstrap Config File "
-                + bootstrapConfigAbsoluteFile.getAbsolutePath() + " has an invalid value. Must be a non-negative integer");
+                    + bootstrapConfigAbsoluteFile.getAbsolutePath() + " has an invalid value. Must be a non-negative integer");
         }
         return gracefulShutdownSeconds;
     }
@@ -1137,7 +1172,7 @@ public class RunMiNiFi implements QueryableStatusAggregator, ConfigurationFileHo
             if (javaHome != null) {
                 String fileExtension = isWindows() ? ".exe" : "";
                 File javaFile = new File(javaHome + File.separatorChar + "bin"
-                    + File.separatorChar + "java" + fileExtension);
+                        + File.separatorChar + "java" + fileExtension);
                 if (javaFile.exists() && javaFile.canExecute()) {
                     javaCmd = javaFile.getAbsolutePath();
                 }
@@ -1156,7 +1191,7 @@ public class RunMiNiFi implements QueryableStatusAggregator, ConfigurationFileHo
         cmd.add("-Dnifi.properties.file.path=" + minifiPropsFilename);
         cmd.add("-Dnifi.bootstrap.listen.port=" + listenPort);
         cmd.add("-Dapp=MiNiFi");
-        cmd.add("-Dorg.apache.nifi.minifi.bootstrap.config.log.dir="+minifiLogDir);
+        cmd.add("-Dorg.apache.nifi.minifi.bootstrap.config.log.dir=" + minifiLogDir);
         cmd.add("org.apache.nifi.minifi.MiNiFi");
 
         builder.command(cmd);
@@ -1344,9 +1379,9 @@ public class RunMiNiFi implements QueryableStatusAggregator, ConfigurationFileHo
 
         try (final Socket socket = new Socket("localhost", port)) {
             final OutputStream out = socket.getOutputStream();
-            final String commandWithArgs = FLOW_STATUS_REPORT_CMD + " " + secretKey +" " + statusRequest + "\n";
+            final String commandWithArgs = FLOW_STATUS_REPORT_CMD + " " + secretKey + " " + statusRequest + "\n";
             out.write((commandWithArgs).getBytes(StandardCharsets.UTF_8));
-            logger.debug("Sending command to MiNiFi: {}",commandWithArgs);
+            logger.debug("Sending command to MiNiFi: {}", commandWithArgs);
             out.flush();
 
             logger.debug("Sent FLOW_STATUS_REPORT_CMD to MiNiFi");
@@ -1588,7 +1623,7 @@ public class RunMiNiFi implements QueryableStatusAggregator, ConfigurationFileHo
     }
 
     private void startPeriodicNotifiers() throws IOException {
-        for (PeriodicStatusReporter periodicStatusReporter: this.periodicStatusReporters) {
+        for (PeriodicStatusReporter periodicStatusReporter : this.periodicStatusReporters) {
             periodicStatusReporter.start();
         }
     }
@@ -1670,7 +1705,7 @@ public class RunMiNiFi implements QueryableStatusAggregator, ConfigurationFileHo
                         throw e;
                     }
                 }
-            } catch (ConfigurationChangeException e){
+            } catch (ConfigurationChangeException e) {
                 logger.error("Unable to carry out reloading of configuration on receipt of notification event", e);
                 throw e;
             } catch (IOException ioe) {
@@ -1679,7 +1714,7 @@ public class RunMiNiFi implements QueryableStatusAggregator, ConfigurationFileHo
             } finally {
                 try {
                     if (configInputStream != null) {
-                        configInputStream.close() ;
+                        configInputStream.close();
                     }
                 } catch (IOException e) {
                     // Quietly close
@@ -1718,16 +1753,48 @@ public class RunMiNiFi implements QueryableStatusAggregator, ConfigurationFileHo
 
     private static ByteBuffer performTransformation(InputStream configIs, String configDestinationPath) throws ConfigurationChangeException, IOException {
         try (ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
-                TeeInputStream teeInputStream = new TeeInputStream(configIs, byteArrayOutputStream)) {
+             TeeInputStream teeInputStream = new TeeInputStream(configIs, byteArrayOutputStream)) {
+
+            final Map<String, String> bootstrapSecurityProperites = new HashMap<>();
+
 
             ConfigTransformer.transformConfigFile(teeInputStream, configDestinationPath);
 
             return ByteBuffer.wrap(byteArrayOutputStream.toByteArray());
-        } catch (ConfigurationChangeException e){
+        } catch (ConfigurationChangeException e) {
             throw e;
         } catch (Exception e) {
             throw new IOException("Unable to successfully transform the provided configuration", e);
         }
+    }
+
+    // scoped for testing
+    static SecurityPropertiesSchema buildSecurityPropertiesFromBootstrap(final Properties bootstrapProperties) {
+        final Map<String, String> securityProperties = new HashMap<>();
+
+        final String rawKeystoreValue = bootstrapProperties.getProperty(SECURITY_KEYSTORE_KEY);
+        final String rawKeystoreTypeValue = bootstrapProperties.getProperty(SECURITY_KEYSTORE_TYPE_KEY);
+        final String rawKeystorePasswordValue = bootstrapProperties.getProperty(SECURITY_KEYSTORE_PASSWORD_KEY);
+        final String rawKeyPasswordValue = bootstrapProperties.getProperty(SECURITY_KEY_PASSWORD_KEY);
+
+        final String rawTruststoreValue = bootstrapProperties.getProperty(SECURITY_TRUSTSTORE_KEY);
+        final String rawTruststoreTypeValue = bootstrapProperties.getProperty(SECURITY_TRUSTSTORE_TYPE_KEY);
+        final String rawTruststorePasswordValue = bootstrapProperties.getProperty(SECURITY_TRUSTSTORE_PASSWORD_KEY);
+
+        final String rawSensitivePropsKeyValue = bootstrapProperties.getProperty(SENSITIVE_PROPS_KEY_KEY);
+        final String rawSensitivePropsAlgorithmValue = bootstrapProperties.getProperty(SENSITIVE_PROPS_ALGORITHM_KEY);
+        final String rawSensitivePropsProviderValue = bootstrapProperties.getProperty(SENSITIVE_PROPS_PROVIDER_KEY);
+
+        BOOTSTRAP_SECURITY_PROPERTY_KEYS.stream()
+                .filter(key -> bootstrapProperties.getProperty(BOOTSTRAP_KEYS_TO_YML_KEYS.get(key) != null))
+                .forEach(key ->
+                        securityProperties.put(key, bootstrapProperties.getProperty(BOOTSTRAP_KEYS_TO_YML_KEYS.get(key))
+                        )
+                );
+
+        final SecurityPropertiesSchema securityPropertiesSchema = new SecurityPropertiesSchema(securityProperties);
+
+        return securityPropertiesSchema;
     }
 
     private static class Status {
