@@ -67,6 +67,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Optional;
 import java.util.Properties;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
@@ -1769,32 +1770,25 @@ public class RunMiNiFi implements QueryableStatusAggregator, ConfigurationFileHo
     }
 
     // scoped for testing
-    static SecurityPropertiesSchema buildSecurityPropertiesFromBootstrap(final Properties bootstrapProperties) {
+    static Optional<SecurityPropertiesSchema> buildSecurityPropertiesFromBootstrap(final Properties bootstrapProperties) {
+
+        Optional<SecurityPropertiesSchema> securityPropsOptional = Optional.empty();
+
         final Map<String, String> securityProperties = new HashMap<>();
 
-        final String rawKeystoreValue = bootstrapProperties.getProperty(SECURITY_KEYSTORE_KEY);
-        final String rawKeystoreTypeValue = bootstrapProperties.getProperty(SECURITY_KEYSTORE_TYPE_KEY);
-        final String rawKeystorePasswordValue = bootstrapProperties.getProperty(SECURITY_KEYSTORE_PASSWORD_KEY);
-        final String rawKeyPasswordValue = bootstrapProperties.getProperty(SECURITY_KEY_PASSWORD_KEY);
-
-        final String rawTruststoreValue = bootstrapProperties.getProperty(SECURITY_TRUSTSTORE_KEY);
-        final String rawTruststoreTypeValue = bootstrapProperties.getProperty(SECURITY_TRUSTSTORE_TYPE_KEY);
-        final String rawTruststorePasswordValue = bootstrapProperties.getProperty(SECURITY_TRUSTSTORE_PASSWORD_KEY);
-
-        final String rawSensitivePropsKeyValue = bootstrapProperties.getProperty(SENSITIVE_PROPS_KEY_KEY);
-        final String rawSensitivePropsAlgorithmValue = bootstrapProperties.getProperty(SENSITIVE_PROPS_ALGORITHM_KEY);
-        final String rawSensitivePropsProviderValue = bootstrapProperties.getProperty(SENSITIVE_PROPS_PROVIDER_KEY);
-
         BOOTSTRAP_SECURITY_PROPERTY_KEYS.stream()
-                .filter(key -> bootstrapProperties.getProperty(BOOTSTRAP_KEYS_TO_YML_KEYS.get(key) != null))
+                .filter(key -> StringUtils.isNotBlank(bootstrapProperties.getProperty(key)))
                 .forEach(key ->
                         securityProperties.put(key, bootstrapProperties.getProperty(BOOTSTRAP_KEYS_TO_YML_KEYS.get(key))
                         )
                 );
 
-        final SecurityPropertiesSchema securityPropertiesSchema = new SecurityPropertiesSchema(securityProperties);
+        if (!securityProperties.isEmpty()) {
+            SecurityPropertiesSchema securityPropertiesSchema = new SecurityPropertiesSchema(securityProperties);
+            securityPropsOptional = Optional.of(securityPropertiesSchema);
+        }
 
-        return securityPropertiesSchema;
+        return securityPropsOptional;
     }
 
     private static class Status {

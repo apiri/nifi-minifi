@@ -6,6 +6,7 @@ import org.junit.Test;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.Optional;
 import java.util.Properties;
 
 public class RunMiNiFiTest {
@@ -13,15 +14,15 @@ public class RunMiNiFiTest {
     @Test
     public void buildSecurityPropertiesNotDefined() throws Exception {
         final Properties bootstrapProperties = getTestBootstrapProperties("bootstrap.conf.default");
-        final SecurityPropertiesSchema securityPropertiesSchema = RunMiNiFi.buildSecurityPropertiesFromBootstrap(bootstrapProperties);
-        Assert.assertNull(securityPropertiesSchema);
+        final Optional<SecurityPropertiesSchema> securityPropsOptional = RunMiNiFi.buildSecurityPropertiesFromBootstrap(bootstrapProperties);
+        Assert.assertTrue(!securityPropsOptional.isPresent());
     }
 
     @Test
     public void buildSecurityPropertiesDefined() throws Exception {
         final Properties bootstrapProperties = getTestBootstrapProperties("bootstrap.conf.configured");
-        final SecurityPropertiesSchema securityPropertiesSchema = RunMiNiFi.buildSecurityPropertiesFromBootstrap(bootstrapProperties);
-        Assert.assertNotNull(securityPropertiesSchema);
+        final Optional<SecurityPropertiesSchema> securityPropsOptional = RunMiNiFi.buildSecurityPropertiesFromBootstrap(bootstrapProperties);
+        Assert.assertTrue(securityPropsOptional.isPresent());
     }
 
     private static Properties getTestBootstrapProperties(final String fileName) throws IOException {
