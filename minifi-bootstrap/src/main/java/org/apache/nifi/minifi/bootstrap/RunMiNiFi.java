@@ -25,6 +25,7 @@ import org.apache.nifi.minifi.bootstrap.status.PeriodicStatusReporter;
 import org.apache.nifi.minifi.bootstrap.util.ConfigTransformer;
 import org.apache.nifi.minifi.commons.schema.SecurityPropertiesSchema;
 import org.apache.nifi.minifi.commons.schema.SensitivePropsSchema;
+import org.apache.nifi.minifi.commons.schema.common.CommonPropertyKeys;
 import org.apache.nifi.minifi.commons.status.FlowStatusReport;
 import org.apache.nifi.util.Tuple;
 import org.apache.nifi.util.file.FileUtils;
@@ -57,6 +58,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.nio.file.attribute.PosixFilePermission;
+import java.security.Security;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -156,7 +158,10 @@ public class RunMiNiFi implements QueryableStatusAggregator, ConfigurationFileHo
                     SECURITY_KEY_PASSWORD_KEY,
                     SECURITY_TRUSTSTORE_KEY,
                     SECURITY_TRUSTSTORE_TYPE_KEY,
-                    SECURITY_TRUSTSTORE_PASSWORD_KEY,
+                    SECURITY_TRUSTSTORE_PASSWORD_KEY));
+
+    public static final Set<String> BOOTSTRAP_SENSITIVE_PROPERTY_KEYS = new HashSet<>(
+            Arrays.asList(
                     SENSITIVE_PROPS_KEY_KEY,
                     SENSITIVE_PROPS_ALGORITHM_KEY,
                     SENSITIVE_PROPS_PROVIDER_KEY));
@@ -1772,17 +1777,27 @@ public class RunMiNiFi implements QueryableStatusAggregator, ConfigurationFileHo
 
         Optional<SecurityPropertiesSchema> securityPropsOptional = Optional.empty();
 
-        final Map<String, String> securityProperties = new HashMap<>();
+        final Map<String, Object> securityProperties = new HashMap<>();
 
         BOOTSTRAP_SECURITY_PROPERTY_KEYS.stream()
                 .filter(key -> StringUtils.isNotBlank(bootstrapProperties.getProperty(key)))
                 .forEach(key ->
-                        securityProperties.put(key, bootstrapProperties.getProperty(BOOTSTRAP_KEYS_TO_YML_KEYS.get(key))
-                        )
+                        securityProperties.put(BOOTSTRAP_KEYS_TO_YML_KEYS.get(key), bootstrapProperties.getProperty(key))
                 );
 
         if (!securityProperties.isEmpty()) {
-            SecurityPropertiesSchema securityPropertiesSchema = new SecurityPropertiesSchema(securityProperties);
+            // Determine if sensitive properties were provided
+            final Map<String, String> sensitiveProperties = new HashMap<>();
+            BOOTSTRAP_SENSITIVE_PROPERTY_KEYS.stream()
+                    .filter(key -> StringUtils.isNotBlank(bootstrapProperties.getProperty(key)))
+                    .forEach(key ->
+                            sensitiveProperties.put(BOOTSTRAP_KEYS_TO_YML_KEYS.get(key), bootstrapProperties.getProperty(key))
+                    );
+            if (!sensitiveProperties.isEmpty()) {
+                securityProperties.put(CommonPropertyKeys.SENSITIVE_PROPS_KEY, sensitiveProperties);
+            }
+
+            final SecurityPropertiesSchema securityPropertiesSchema = new SecurityPropertiesSchema(securityProperties);
             securityPropsOptional = Optional.of(securityPropertiesSchema);
         }
 

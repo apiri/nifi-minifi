@@ -17,6 +17,7 @@
 package org.apache.nifi.minifi.bootstrap;
 
 import org.apache.nifi.minifi.commons.schema.SecurityPropertiesSchema;
+import org.apache.nifi.minifi.commons.schema.SensitivePropsSchema;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -39,6 +40,53 @@ public class RunMiNiFiTest {
         final Properties bootstrapProperties = getTestBootstrapProperties("bootstrap.conf.configured");
         final Optional<SecurityPropertiesSchema> securityPropsOptional = RunMiNiFi.buildSecurityPropertiesFromBootstrap(bootstrapProperties);
         Assert.assertTrue(securityPropsOptional.isPresent());
+
+        final SecurityPropertiesSchema securityPropertiesSchema = securityPropsOptional.get();
+        Assert.assertEquals("/my/test/keystore.jks", securityPropertiesSchema.getKeystore());
+        Assert.assertEquals("JKS", securityPropertiesSchema.getKeystoreType());
+        Assert.assertEquals("mykeystorepassword", securityPropertiesSchema.getKeystorePassword());
+        Assert.assertEquals("mykeypassword", securityPropertiesSchema.getKeyPassword());
+
+        Assert.assertEquals("/my/test/truststore.jks", securityPropertiesSchema.getTruststore());
+        Assert.assertEquals("JKS", securityPropertiesSchema.getTruststoreType());
+        Assert.assertEquals("mytruststorepassword", securityPropertiesSchema.getTruststorePassword());
+
+        final SensitivePropsSchema sensitiveProps = securityPropertiesSchema.getSensitiveProps();
+        Assert.assertNotNull(sensitiveProps);
+
+        Assert.assertEquals("sensitivepropskey", sensitiveProps.getKey());
+        Assert.assertEquals("algo", sensitiveProps.getAlgorithm());
+        Assert.assertEquals("BC", sensitiveProps.getProvider());
+
+
+        Assert.assertTrue(securityPropertiesSchema.isValid());
+    }
+
+    @Test
+    public void buildSecurityPropertiesDefinedButInvalid() throws Exception {
+        final Properties bootstrapProperties = getTestBootstrapProperties("bootstrap.conf.configured.invalid");
+        final Optional<SecurityPropertiesSchema> securityPropsOptional = RunMiNiFi.buildSecurityPropertiesFromBootstrap(bootstrapProperties);
+        Assert.assertTrue(securityPropsOptional.isPresent());
+
+        final SecurityPropertiesSchema securityPropertiesSchema = securityPropsOptional.get();
+        Assert.assertEquals("/my/test/keystore.jks", securityPropertiesSchema.getKeystore());
+        Assert.assertEquals("NOTAKEYSTORETYPE", securityPropertiesSchema.getKeystoreType());
+        Assert.assertEquals("mykeystorepassword", securityPropertiesSchema.getKeystorePassword());
+        Assert.assertEquals("mykeypassword", securityPropertiesSchema.getKeyPassword());
+
+        Assert.assertEquals("/my/test/truststore.jks", securityPropertiesSchema.getTruststore());
+        Assert.assertEquals("JKS", securityPropertiesSchema.getTruststoreType());
+        Assert.assertEquals("mytruststorepassword", securityPropertiesSchema.getTruststorePassword());
+
+        final SensitivePropsSchema sensitiveProps = securityPropertiesSchema.getSensitiveProps();
+        Assert.assertNotNull(sensitiveProps);
+
+        Assert.assertEquals("sensitivepropskey", sensitiveProps.getKey());
+        Assert.assertEquals("algo", sensitiveProps.getAlgorithm());
+        Assert.assertEquals("BC", sensitiveProps.getProvider());
+
+        Assert.assertFalse(securityPropertiesSchema.isValid());
+
     }
 
     private static Properties getTestBootstrapProperties(final String fileName) throws IOException {
