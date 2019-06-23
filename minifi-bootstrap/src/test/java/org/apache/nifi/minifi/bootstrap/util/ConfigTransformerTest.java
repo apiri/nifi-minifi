@@ -30,6 +30,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.Charset;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -39,7 +40,9 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.zip.GZIPInputStream;
 
+import javax.naming.ldap.Control;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
@@ -60,14 +63,22 @@ import org.apache.nifi.minifi.commons.schema.ProcessGroupSchema;
 import org.apache.nifi.minifi.commons.schema.ProcessorSchema;
 import org.apache.nifi.minifi.commons.schema.RemotePortSchema;
 import org.apache.nifi.minifi.commons.schema.RemoteProcessGroupSchema;
+import org.apache.nifi.minifi.commons.schema.SecurityPropertiesSchema;
+import org.apache.nifi.minifi.commons.schema.common.CommonPropertyKeys;
 import org.apache.nifi.minifi.commons.schema.common.StringUtil;
 import org.apache.nifi.minifi.commons.schema.exception.SchemaLoaderException;
 import org.apache.nifi.minifi.commons.schema.serialization.SchemaLoader;
+import org.apache.nifi.util.NiFiProperties;
+import org.junit.Assert;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.TemporaryFolder;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
+import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
+import sun.security.krb5.Config;
 
 public class ConfigTransformerTest {
     public static final Map<String, Integer> PG_ELEMENT_ORDER_MAP = generateOrderMap(
@@ -76,6 +87,9 @@ public class ConfigTransformerTest {
     private Document document;
     private Element config;
     private DocumentBuilder documentBuilder;
+
+    @Rule
+    final public TemporaryFolder tempOutputFolder = new TemporaryFolder();
 
     @Before
     public void setup() throws ParserConfigurationException {
@@ -398,7 +412,7 @@ public class ConfigTransformerTest {
         try {
             ConfigTransformer.transformConfigFile("./src/test/resources/config-invalid.yml", "./target/");
             fail("Invalid configuration file was not detected.");
-        } catch (SchemaLoaderException e){
+        } catch (SchemaLoaderException e) {
             assertEquals("Provided YAML configuration is not a Map", e.getMessage());
         }
     }
@@ -408,7 +422,7 @@ public class ConfigTransformerTest {
         try {
             ConfigTransformer.transformConfigFile("./src/test/resources/config-malformed-field.yml", "./target/");
             fail("Invalid configuration file was not detected.");
-        } catch (InvalidConfigurationException e){
+        } catch (InvalidConfigurationException e) {
             assertEquals("Failed to transform config file due to:['threshold' in section 'Swap' because it is found but could not be parsed as a Number]", e.getMessage());
         }
     }
@@ -418,7 +432,7 @@ public class ConfigTransformerTest {
         try {
             ConfigTransformer.transformConfigFile("./src/test/resources/config-empty.yml", "./target/");
             fail("Invalid configuration file was not detected.");
-        } catch (SchemaLoaderException e){
+        } catch (SchemaLoaderException e) {
             assertEquals("Provided YAML configuration is not a Map", e.getMessage());
         }
     }
@@ -428,7 +442,7 @@ public class ConfigTransformerTest {
         try {
             ConfigTransformer.transformConfigFile("./src/test/resources/config-missing-required-field.yml", "./target/");
             fail("Invalid configuration file was not detected.");
-        } catch (InvalidConfigurationException e){
+        } catch (InvalidConfigurationException e) {
             assertEquals("Failed to transform config file due to:['class' in section 'Processors' because it was not found and it is required]", e.getMessage());
         }
     }
@@ -438,11 +452,106 @@ public class ConfigTransformerTest {
         try {
             ConfigTransformer.transformConfigFile("./src/test/resources/config-multiple-problems.yml", "./target/");
             fail("Invalid configuration file was not detected.");
-        } catch (InvalidConfigurationException e){
+        } catch (InvalidConfigurationException e) {
             assertEquals("Failed to transform config file due to:['class' in section 'Processors' because it was not found and it is required], " +
                     "['scheduling strategy' in section 'Provenance Reporting' because it is not a valid scheduling strategy], " +
                     "['source name' in section 'Connections' because it was not found and it is required]", e.getMessage());
         }
+    }
+
+    @Test
+    public void handleTransformWithNoBootstrapProperties() throws Exception {
+
+        final File testOutputFolder = tempOutputFolder.newFolder();
+
+        ConfigTransformer.transformConfigFile("./src/test/resources/bootstrap-ssl-ctx/config.yml", testOutputFolder.getAbsolutePath(), null);
+
+        final File nifiPropertiesFile = new File(testOutputFolder, "nifi.properties");
+
+        assertTrue(nifiPropertiesFile.exists());
+        assertTrue(nifiPropertiesFile.canRead());
+
+        final Properties nifiProps = new Properties();
+
+        try (final InputStream nifiFis = new FileInputStream(nifiPropertiesFile)) {
+            nifiProps.load(nifiFis);
+        }
+
+        assertEquals("/tmp/ssl/localhost-ks.jks", nifiProps.get(NiFiProperties.SECURITY_KEYSTORE));
+        assertEquals("localtest", nifiProps.get(NiFiProperties.SECURITY_KEYSTORE_PASSWD));
+        assertEquals("localtest", nifiProps.get(NiFiProperties.SECURITY_KEY_PASSWD));
+        assertEquals("/tmp/ssl/localhost-ts.jks", nifiProps.get(NiFiProperties.SECURITY_TRUSTSTORE));
+        assertEquals("localtest", nifiProps.get(NiFiProperties.SECURITY_TRUSTSTORE_PASSWD));
+
+        nifiPropertiesFile.deleteOnExit();
+    }
+
+
+    @Test
+    public void handleTransformWithBootstrapProperties() throws Exception {
+
+        final File testOutputFolder = tempOutputFolder.newFolder();
+
+        ConfigTransformer.transformConfigFile("./src/test/resources/bootstrap-ssl-ctx/config.yml", testOutputFolder.getAbsolutePath(), null);
+
+        final File nifiPropertiesFile = new File(testOutputFolder, "nifi.properties");
+
+        assertTrue(nifiPropertiesFile.exists());
+        assertTrue(nifiPropertiesFile.canRead());
+
+        final Properties nifiProps = new Properties();
+
+        try (final InputStream nifiFis = new FileInputStream(nifiPropertiesFile)) {
+            nifiProps.load(nifiFis);
+        }
+
+        assertEquals("/tmp/ssl/localhost-ks.jks", nifiProps.get(NiFiProperties.SECURITY_KEYSTORE));
+        assertEquals("localtest", nifiProps.get(NiFiProperties.SECURITY_KEYSTORE_PASSWD));
+        assertEquals("localtest", nifiProps.get(NiFiProperties.SECURITY_TRUSTSTORE_PASSWD));
+        assertEquals("localtest", nifiProps.get(NiFiProperties.SECURITY_KEY_PASSWD));
+
+        assertEquals("/tmp/ssl/localhost-ts.jks", nifiProps.get(NiFiProperties.SECURITY_TRUSTSTORE));
+
+
+        final File flowXml = new File(testOutputFolder, "flow.xml.gz");
+        assertTrue(flowXml.exists());
+        assertTrue(flowXml.canRead());
+
+        try (final InputStream gzFlowXmlIs = new FileInputStream(flowXml);
+             final GZIPInputStream flowXmlIs = new GZIPInputStream(gzFlowXmlIs)) {
+            final Document document = documentBuilder.parse(flowXmlIs);
+            final NodeList controllerServices = document.getElementsByTagName("controllerService");
+            Assert.assertEquals(1, controllerServices.getLength());
+
+            Node controllerService = controllerServices.item(0);
+            if (controllerService.getNodeType() == Node.ELEMENT_NODE) {
+                final Element sslCtxCs = (Element) controllerService;
+
+                final Map<String, Object> expectedCsValues = new HashMap<>();
+                expectedCsValues.put(CommonPropertyKeys.ID_KEY, "SSL-Context-Service");
+                expectedCsValues.put(CommonPropertyKeys.NAME_KEY, "SSL-Context-Service");
+                expectedCsValues.put(CommonPropertyKeys.COMMENT_KEY, "");
+                expectedCsValues.put(CommonPropertyKeys.TYPE_KEY, "org.apache.nifi.ssl.StandardSSLContextService");
+                expectedCsValues.put("enabled", "true");
+
+                final Map<String, String> expectedCsProperties = new HashMap<>();
+                expectedCsProperties.put("Keystore Filename", "/tmp/ssl/localhost-ks.jks");
+                expectedCsProperties.put("Keystore Password", "localtest");
+                expectedCsProperties.put("Keystore Type", "JKS");
+                expectedCsProperties.put("Truststore Filename", "/tmp/ssl/localhost-ts.jks");
+                expectedCsProperties.put("Truststore Type", "JKS");
+                expectedCsProperties.put("Truststore Password", "localtest");
+                expectedCsProperties.put("SSL Protocol", "TLS");
+
+                expectedCsValues.put(CommonPropertyKeys.PROPERTIES_KEY, expectedCsProperties);
+
+                final ControllerServiceSchema csSchema = new ControllerServiceSchema(expectedCsValues);
+                testControllerService(sslCtxCs, csSchema);
+            }
+        }
+
+        flowXml.deleteOnExit();
+        nifiPropertiesFile.deleteOnExit();
     }
 
     public void testConfigFileTransform(String configFile) throws Exception {
@@ -639,7 +748,7 @@ public class ConfigTransformerTest {
             if (index != null) {
                 if (elementOrderList > index) {
                     fail("Found " + nodeName + " after " + lastOrderedElementName + "; expected all " + nodeName + " elements to come before the following elements: " + orderMap.entrySet().stream()
-                            .filter(e -> e.getValue() > index ).sorted(Comparator.comparingInt(e -> e.getValue())).map(e -> e.getKey()).collect(Collectors.joining(", ")));
+                            .filter(e -> e.getValue() > index).sorted(Comparator.comparingInt(e -> e.getValue())).map(e -> e.getKey()).collect(Collectors.joining(", ")));
                 }
                 lastOrderedElementName = nodeName;
                 elementOrderList = index;

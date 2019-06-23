@@ -146,6 +146,7 @@ public class RunMiNiFi implements QueryableStatusAggregator, ConfigurationFileHo
     public static final String SECURITY_TRUSTSTORE_KEY = "nifi.minifi.security.truststore";
     public static final String SECURITY_TRUSTSTORE_TYPE_KEY = "nifi.minifi.security.truststoreType";
     public static final String SECURITY_TRUSTSTORE_PASSWORD_KEY = "nifi.minifi.security.truststorePasswd";
+    public static final String SECURITY_SSL_PROTOCOL_KEY = "nifi.minifi.security.ssl.protocol";
 
     public static final String SENSITIVE_PROPS_KEY_KEY = "nifi.minifi.sensitive.props.key";
     public static final String SENSITIVE_PROPS_ALGORITHM_KEY = "nifi.minifi.sensitive.props.algorithm";
@@ -158,7 +159,8 @@ public class RunMiNiFi implements QueryableStatusAggregator, ConfigurationFileHo
                     SECURITY_KEY_PASSWORD_KEY,
                     SECURITY_TRUSTSTORE_KEY,
                     SECURITY_TRUSTSTORE_TYPE_KEY,
-                    SECURITY_TRUSTSTORE_PASSWORD_KEY));
+                    SECURITY_TRUSTSTORE_PASSWORD_KEY,
+                    SECURITY_SSL_PROTOCOL_KEY));
 
     public static final Set<String> BOOTSTRAP_SENSITIVE_PROPERTY_KEYS = new HashSet<>(
             Arrays.asList(
@@ -179,6 +181,8 @@ public class RunMiNiFi implements QueryableStatusAggregator, ConfigurationFileHo
         mutableMap.put(SECURITY_TRUSTSTORE_KEY, SecurityPropertiesSchema.TRUSTSTORE_KEY);
         mutableMap.put(SECURITY_TRUSTSTORE_TYPE_KEY, SecurityPropertiesSchema.TRUSTSTORE_TYPE_KEY);
         mutableMap.put(SECURITY_TRUSTSTORE_PASSWORD_KEY, SecurityPropertiesSchema.TRUSTSTORE_PASSWORD_KEY);
+
+        mutableMap.put(SECURITY_SSL_PROTOCOL_KEY, SecurityPropertiesSchema.SSL_PROTOCOL_KEY);
 
         mutableMap.put(SENSITIVE_PROPS_KEY_KEY, SensitivePropsSchema.SENSITIVE_PROPS_KEY_KEY);
         mutableMap.put(SENSITIVE_PROPS_ALGORITHM_KEY, SensitivePropsSchema.SENSITIVE_PROPS_ALGORITHM_KEY);

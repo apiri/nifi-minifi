@@ -30,14 +30,14 @@ public class RunMiNiFiTest {
 
     @Test
     public void buildSecurityPropertiesNotDefined() throws Exception {
-        final Properties bootstrapProperties = getTestBootstrapProperties("bootstrap.conf.default");
+        final Properties bootstrapProperties = getTestBootstrapProperties("bootstrap-ssl-ctx/bootstrap.conf.default");
         final Optional<SecurityPropertiesSchema> securityPropsOptional = RunMiNiFi.buildSecurityPropertiesFromBootstrap(bootstrapProperties);
         Assert.assertTrue(!securityPropsOptional.isPresent());
     }
 
     @Test
     public void buildSecurityPropertiesDefined() throws Exception {
-        final Properties bootstrapProperties = getTestBootstrapProperties("bootstrap.conf.configured");
+        final Properties bootstrapProperties = getTestBootstrapProperties("bootstrap-ssl-ctx/bootstrap.conf.configured");
         final Optional<SecurityPropertiesSchema> securityPropsOptional = RunMiNiFi.buildSecurityPropertiesFromBootstrap(bootstrapProperties);
         Assert.assertTrue(securityPropsOptional.isPresent());
 
@@ -50,6 +50,8 @@ public class RunMiNiFiTest {
         Assert.assertEquals("/my/test/truststore.jks", securityPropertiesSchema.getTruststore());
         Assert.assertEquals("JKS", securityPropertiesSchema.getTruststoreType());
         Assert.assertEquals("mytruststorepassword", securityPropertiesSchema.getTruststorePassword());
+
+        Assert.assertEquals("TLS", securityPropertiesSchema.getSslProtocol());
 
         final SensitivePropsSchema sensitiveProps = securityPropertiesSchema.getSensitiveProps();
         Assert.assertNotNull(sensitiveProps);
@@ -64,7 +66,7 @@ public class RunMiNiFiTest {
 
     @Test
     public void buildSecurityPropertiesDefinedButInvalid() throws Exception {
-        final Properties bootstrapProperties = getTestBootstrapProperties("bootstrap.conf.configured.invalid");
+        final Properties bootstrapProperties = getTestBootstrapProperties("bootstrap-ssl-ctx/bootstrap.conf.configured.invalid");
         final Optional<SecurityPropertiesSchema> securityPropsOptional = RunMiNiFi.buildSecurityPropertiesFromBootstrap(bootstrapProperties);
         Assert.assertTrue(securityPropsOptional.isPresent());
 

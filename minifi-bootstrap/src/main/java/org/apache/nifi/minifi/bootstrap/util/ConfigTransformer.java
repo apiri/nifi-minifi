@@ -89,26 +89,29 @@ public final class ConfigTransformer {
     }
 
     public static void transformConfigFile(String sourceFile, String destPath) throws Exception {
-        File ymlConfigFile = new File(sourceFile);
-        InputStream ios = new FileInputStream(ymlConfigFile);
+        transformConfigFile(sourceFile, destPath, null);
+    }
 
-        transformConfigFile(ios, destPath);
+    public static void transformConfigFile(String sourceFile, String destPath, SecurityPropertiesSchema securityProperties) throws Exception {
+        final File ymlConfigFile = new File(sourceFile);
+        final InputStream ios = new FileInputStream(ymlConfigFile);
+
+        transformConfigFile(ios, destPath, securityProperties);
     }
 
 
     public static void transformConfigFile(InputStream sourceStream, String destPath) throws Exception {
-        Optional<SecurityPropertiesSchema> optional = Optional.empty();
-        transformConfigFile(sourceStream, destPath, optional);
+        transformConfigFile(sourceStream, destPath, null);
     }
 
 
-    public static void transformConfigFile(InputStream sourceStream, String destPath, Optional<SecurityPropertiesSchema> securityPropertiesOptional) throws Exception {
+    public static void transformConfigFile(InputStream sourceStream, String destPath, SecurityPropertiesSchema securityProperties) throws Exception {
         ConvertableSchema<ConfigSchema> convertableSchema = throwIfInvalid(SchemaLoader.loadConvertableSchemaFromYaml(sourceStream));
         ConfigSchema configSchema = throwIfInvalid(convertableSchema.convert());
 
         // See if we are providing defined properties from the filesystem configurations and use those as the definitive values
-        if (securityPropertiesOptional.isPresent()) {
-            configSchema.setSecurityProperties(securityPropertiesOptional.get());
+        if (securityProperties != null) {
+            configSchema.setSecurityProperties(securityProperties);
         }
 
         // Create nifi.properties and flow.xml.gz in memory

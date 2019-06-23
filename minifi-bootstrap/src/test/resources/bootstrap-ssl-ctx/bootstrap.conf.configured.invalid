@@ -42,6 +42,7 @@ nifi.minifi.security.keyPasswd=mykeypassword
 nifi.minifi.security.truststore=/my/test/truststore.jks
 nifi.minifi.security.truststoreType=JKS
 nifi.minifi.security.truststorePasswd=mytruststorepassword
+nifi.minifi.security.ssl.protocol=TLS
 
 nifi.minifi.sensitive.props.key=sensitivepropskey
 nifi.minifi.sensitive.props.algorithm=algo
