@@ -37,6 +37,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Properties;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -52,6 +53,8 @@ import javax.xml.xpath.XPathExpressionException;
 import javax.xml.xpath.XPathFactory;
 
 import org.apache.commons.io.FileUtils;
+import org.apache.nifi.minifi.bootstrap.RunMiNiFi;
+import org.apache.nifi.minifi.bootstrap.RunMiNiFiTest;
 import org.apache.nifi.minifi.bootstrap.configuration.ConfigurationChangeException;
 import org.apache.nifi.minifi.bootstrap.exception.InvalidConfigurationException;
 import org.apache.nifi.minifi.commons.schema.ConfigSchema;
@@ -64,6 +67,7 @@ import org.apache.nifi.minifi.commons.schema.ProcessorSchema;
 import org.apache.nifi.minifi.commons.schema.RemotePortSchema;
 import org.apache.nifi.minifi.commons.schema.RemoteProcessGroupSchema;
 import org.apache.nifi.minifi.commons.schema.SecurityPropertiesSchema;
+import org.apache.nifi.minifi.commons.schema.SensitivePropsSchema;
 import org.apache.nifi.minifi.commons.schema.common.CommonPropertyKeys;
 import org.apache.nifi.minifi.commons.schema.common.StringUtil;
 import org.apache.nifi.minifi.commons.schema.exception.SchemaLoaderException;
@@ -461,35 +465,6 @@ public class ConfigTransformerTest {
 
     @Test
     public void handleTransformWithNoBootstrapProperties() throws Exception {
-
-        final File testOutputFolder = tempOutputFolder.newFolder();
-
-        ConfigTransformer.transformConfigFile("./src/test/resources/bootstrap-ssl-ctx/config.yml", testOutputFolder.getAbsolutePath(), null);
-
-        final File nifiPropertiesFile = new File(testOutputFolder, "nifi.properties");
-
-        assertTrue(nifiPropertiesFile.exists());
-        assertTrue(nifiPropertiesFile.canRead());
-
-        final Properties nifiProps = new Properties();
-
-        try (final InputStream nifiFis = new FileInputStream(nifiPropertiesFile)) {
-            nifiProps.load(nifiFis);
-        }
-
-        assertEquals("/tmp/ssl/localhost-ks.jks", nifiProps.get(NiFiProperties.SECURITY_KEYSTORE));
-        assertEquals("localtest", nifiProps.get(NiFiProperties.SECURITY_KEYSTORE_PASSWD));
-        assertEquals("localtest", nifiProps.get(NiFiProperties.SECURITY_KEY_PASSWD));
-        assertEquals("/tmp/ssl/localhost-ts.jks", nifiProps.get(NiFiProperties.SECURITY_TRUSTSTORE));
-        assertEquals("localtest", nifiProps.get(NiFiProperties.SECURITY_TRUSTSTORE_PASSWD));
-
-        nifiPropertiesFile.deleteOnExit();
-    }
-
-
-    @Test
-    public void handleTransformWithBootstrapProperties() throws Exception {
-
         final File testOutputFolder = tempOutputFolder.newFolder();
 
         ConfigTransformer.transformConfigFile("./src/test/resources/bootstrap-ssl-ctx/config.yml", testOutputFolder.getAbsolutePath(), null);
@@ -541,6 +516,88 @@ public class ConfigTransformerTest {
                 expectedCsProperties.put("Truststore Filename", "/tmp/ssl/localhost-ts.jks");
                 expectedCsProperties.put("Truststore Type", "JKS");
                 expectedCsProperties.put("Truststore Password", "localtest");
+                expectedCsProperties.put("SSL Protocol", "TLS");
+
+                expectedCsValues.put(CommonPropertyKeys.PROPERTIES_KEY, expectedCsProperties);
+
+                final ControllerServiceSchema csSchema = new ControllerServiceSchema(expectedCsValues);
+                testControllerService(sslCtxCs, csSchema);
+            }
+        }
+
+        flowXml.deleteOnExit();
+        nifiPropertiesFile.deleteOnExit();
+    }
+
+
+    @Test
+    public void handleTransformWithBootstrapProperties() throws Exception {
+
+        final File testOutputFolder = tempOutputFolder.newFolder();
+        final Properties bootstrapProperties = RunMiNiFiTest.getTestBootstrapProperties("bootstrap-ssl-ctx/bootstrap.conf.configured");
+        final Optional<SecurityPropertiesSchema> securityPropsOptional = RunMiNiFi.buildSecurityPropertiesFromBootstrap(bootstrapProperties);
+        Assert.assertTrue(securityPropsOptional.isPresent());
+
+        final SecurityPropertiesSchema securityPropertiesSchema = securityPropsOptional.get();
+
+
+        ConfigTransformer.transformConfigFile("./src/test/resources/bootstrap-ssl-ctx/config.yml", testOutputFolder.getAbsolutePath(), securityPropertiesSchema);
+
+        final File nifiPropertiesFile = new File(testOutputFolder, "nifi.properties");
+
+        assertTrue(nifiPropertiesFile.exists());
+        assertTrue(nifiPropertiesFile.canRead());
+
+        final Properties nifiProps = new Properties();
+
+        try (final InputStream nifiFis = new FileInputStream(nifiPropertiesFile)) {
+            nifiProps.load(nifiFis);
+        }
+
+        Assert.assertEquals("/my/test/keystore.jks", nifiProps.get(NiFiProperties.SECURITY_KEYSTORE));
+        Assert.assertEquals("JKS", nifiProps.get(NiFiProperties.SECURITY_KEYSTORE_TYPE));
+        Assert.assertEquals("mykeystorepassword", nifiProps.get(NiFiProperties.SECURITY_KEYSTORE_PASSWD));
+        Assert.assertEquals("mykeypassword", nifiProps.get(NiFiProperties.SECURITY_KEY_PASSWD));
+
+        Assert.assertEquals("/my/test/truststore.jks", nifiProps.get(NiFiProperties.SECURITY_TRUSTSTORE));
+        Assert.assertEquals("JKS", nifiProps.get(NiFiProperties.SECURITY_TRUSTSTORE_TYPE));
+        Assert.assertEquals("mytruststorepassword", nifiProps.get(NiFiProperties.SECURITY_TRUSTSTORE_PASSWD));
+
+        final SensitivePropsSchema sensitiveProps = securityPropertiesSchema.getSensitiveProps();
+        Assert.assertNotNull(sensitiveProps);
+
+        Assert.assertEquals("sensitivepropskey", nifiProps.get(NiFiProperties.SENSITIVE_PROPS_KEY));
+        Assert.assertEquals("algo", nifiProps.get(NiFiProperties.SENSITIVE_PROPS_ALGORITHM));
+        Assert.assertEquals("BC", nifiProps.get(NiFiProperties.SENSITIVE_PROPS_PROVIDER));
+
+        final File flowXml = new File(testOutputFolder, "flow.xml.gz");
+        assertTrue(flowXml.exists());
+        assertTrue(flowXml.canRead());
+
+        try (final InputStream gzFlowXmlIs = new FileInputStream(flowXml);
+             final GZIPInputStream flowXmlIs = new GZIPInputStream(gzFlowXmlIs)) {
+            final Document document = documentBuilder.parse(flowXmlIs);
+            final NodeList controllerServices = document.getElementsByTagName("controllerService");
+            Assert.assertEquals(1, controllerServices.getLength());
+
+            Node controllerService = controllerServices.item(0);
+            if (controllerService.getNodeType() == Node.ELEMENT_NODE) {
+                final Element sslCtxCs = (Element) controllerService;
+
+                final Map<String, Object> expectedCsValues = new HashMap<>();
+                expectedCsValues.put(CommonPropertyKeys.ID_KEY, "SSL-Context-Service");
+                expectedCsValues.put(CommonPropertyKeys.NAME_KEY, "SSL-Context-Service");
+                expectedCsValues.put(CommonPropertyKeys.COMMENT_KEY, "");
+                expectedCsValues.put(CommonPropertyKeys.TYPE_KEY, "org.apache.nifi.ssl.StandardSSLContextService");
+                expectedCsValues.put("enabled", "true");
+
+                final Map<String, String> expectedCsProperties = new HashMap<>();
+                expectedCsProperties.put("Keystore Filename", "/my/test/keystore.jks");
+                expectedCsProperties.put("Keystore Password", "mykeystorepassword");
+                expectedCsProperties.put("Keystore Type", "JKS");
+                expectedCsProperties.put("Truststore Filename", "/my/test/truststore.jks");
+                expectedCsProperties.put("Truststore Type", "JKS");
+                expectedCsProperties.put("Truststore Password", "mytruststorepassword");
                 expectedCsProperties.put("SSL Protocol", "TLS");
 
                 expectedCsValues.put(CommonPropertyKeys.PROPERTIES_KEY, expectedCsProperties);

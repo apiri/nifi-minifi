@@ -354,7 +354,7 @@ public final class ConfigTransformer {
             Map<String, Object> attributes = new HashMap<>();
             attributes.put("Keystore Filename", securityProperties.getKeystore());
             attributes.put("Keystore Type", securityProperties.getKeystoreType());
-            attributes.put("Keystore Password", securityProperties.getKeyPassword());
+            attributes.put("Keystore Password", securityProperties.getKeystorePassword());
             attributes.put("Truststore Filename", securityProperties.getTruststore());
             attributes.put("Truststore Type", securityProperties.getTruststoreType());
             attributes.put("Truststore Password", securityProperties.getTruststorePassword());

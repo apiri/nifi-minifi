@@ -91,7 +91,7 @@ public class RunMiNiFiTest {
 
     }
 
-    private static Properties getTestBootstrapProperties(final String fileName) throws IOException {
+    public static Properties getTestBootstrapProperties(final String fileName) throws IOException {
         final Properties bootstrapProperties = new Properties();
         try (final InputStream fis = RunMiNiFiTest.class.getClassLoader().getResourceAsStream(fileName)) {
             bootstrapProperties.load(fis);

@@ -1776,8 +1776,7 @@ public class RunMiNiFi implements QueryableStatusAggregator, ConfigurationFileHo
         }
     }
 
-    // scoped for testing
-    static Optional<SecurityPropertiesSchema> buildSecurityPropertiesFromBootstrap(final Properties bootstrapProperties) {
+    public static Optional<SecurityPropertiesSchema> buildSecurityPropertiesFromBootstrap(final Properties bootstrapProperties) {
 
         Optional<SecurityPropertiesSchema> securityPropsOptional = Optional.empty();
 
